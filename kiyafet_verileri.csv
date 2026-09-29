@@ -1,21 +1,23 @@
-Tarih,Sicaklik,Hissedilen,Nem,Ruzgar,Ust_Giyim,Alt_Giyim,Dis_Giyim,Ayakkabi,Ekstra
-2026-01-15,2.0,-1.0,80,25,Kalın Kazak,Kot pantolon,Mont,Bot,Atkı
-2026-01-20,5.0,3.0,75,15,Kalın Kazak,Kumaş Pantolon,Mont,Bot,Yok
-2026-02-10,8.0,5.0,70,20,Sweatshirt,Eşofman,Mont,Spor Ayakkabı,Atkı
-2026-02-25,10.0,8.0,65,10,İnce Kazak,Kumaş Pantolon,Ceket,Bot,Şemsiye
-2026-03-05,12.0,10.0,60,12,Uzun kollu Tişört,Kot pantolon,Ceket,Spor Ayakkabı,Yok
-2026-03-15,14.0,12.0,55,8,Uzun kollu Tişört,İnce Kumaş pantolon,Hırka,Spor Ayakkabı,Yok
-2026-04-01,16.0,15.0,50,10,Kısa kollu Tişört,Kot pantolon,Hırka,Spor Ayakkabı,Yok
-2026-04-15,18.0,17.0,55,7,Kısa kollu Tişört,İnce Kumaş pantolon,Hırka,Spor Ayakkabı,Şemsiye
-2026-05-01,22.0,21.0,45,5,Kısa kollu Tişört,Etek,Yok,Crocs,Yok
-2026-05-20,25.0,24.0,40,6,Askılı Tişört,Şort,Yok,Crocs,Yok
-2026-06-10,30.0,31.0,35,4,Askılı Tişört,Şort,Yok,Crocs,Yok
-2026-06-25,33.0,35.0,30,3,Askılı Tişört,Şort,Yok,Crocs,Yok
-2026-07-10,35.0,37.0,40,5,Askılı Tişört,Etek,Yok,Crocs,Yok
-2026-07-20,32.0,33.0,45,8,Kısa kollu Tişört,Şort,Yok,Spor Ayakkabı,Yok
-2026-08-05,28.0,29.0,50,6,Kısa kollu Tişört,Etek,Yok,Crocs,Yok
-2026-08-20,26.0,25.0,55,10,Kısa kollu Tişört,İnce Kumaş pantolon,Yok,Spor Ayakkabı,Yok
-2026-09-01,24.0,23.0,50,8,Uzun kollu Tişört,Kumaş Pantolon,Yok,Spor Ayakkabı,Yok
-2026-09-15,20.0,18.0,60,12,İnce Kazak,Kot pantolon,Ceket,Spor Ayakkabı,Şemsiye
-2026-09-25,17.0,15.0,65,15,Sweatshirt,Eşofman,Hırka,Spor Ayakkabı,Yok
-2026-09-28,15.0,13.0,70,18,Sweatshirt,Kot pantolon,Ceket,Bot,Yok
+Tarih,Sicaklik,Hissedilen,Nem,Ruzgar,Ust_Giyim,Alt_Giyim,Dis_Giyim,Ayakkabi,Ekstra,Geri_Bildirim
+2026-01-15,2.0,-1.0,80,25.0,Kalın Kazak,Kot pantolon,Mont,Bot,Atkı,0
+2026-01-20,5.0,3.0,75,15.0,Kalın Kazak,Kumaş Pantolon,Mont,Bot,Yok,0
+2026-02-10,8.0,5.0,70,20.0,Sweatshirt,Eşofman,Mont,Spor Ayakkabı,Atkı,0
+2026-02-25,10.0,8.0,65,10.0,İnce Kazak,Kumaş Pantolon,Ceket,Bot,Şemsiye,0
+2026-03-05,12.0,10.0,60,12.0,Uzun kollu Tişört,Kot pantolon,Ceket,Spor Ayakkabı,Yok,0
+2026-03-15,14.0,12.0,55,8.0,Uzun kollu Tişört,İnce Kumaş pantolon,Hırka,Spor Ayakkabı,Yok,0
+2026-04-01,16.0,15.0,50,10.0,Kısa kollu Tişört,Kot pantolon,Hırka,Spor Ayakkabı,Yok,0
+2026-04-15,18.0,17.0,55,7.0,Kısa kollu Tişört,İnce Kumaş pantolon,Hırka,Spor Ayakkabı,Şemsiye,0
+2026-05-01,22.0,21.0,45,5.0,Kısa kollu Tişört,Etek,Yok,Crocs,Yok,0
+2026-05-20,25.0,24.0,40,6.0,Askılı Tişört,Şort,Yok,Crocs,Yok,0
+2026-06-10,30.0,31.0,35,4.0,Askılı Tişört,Şort,Yok,Crocs,Yok,0
+2026-06-25,33.0,35.0,30,3.0,Askılı Tişört,Şort,Yok,Crocs,Yok,0
+2026-07-10,35.0,37.0,40,5.0,Askılı Tişört,Etek,Yok,Crocs,Yok,0
+2026-07-20,32.0,33.0,45,8.0,Kısa kollu Tişört,Şort,Yok,Spor Ayakkabı,Yok,0
+2026-08-05,28.0,29.0,50,6.0,Kısa kollu Tişört,Etek,Yok,Crocs,Yok,0
+2026-08-20,26.0,25.0,55,10.0,Kısa kollu Tişört,İnce Kumaş pantolon,Yok,Spor Ayakkabı,Yok,0
+2026-09-01,24.0,23.0,50,8.0,Uzun kollu Tişört,Kumaş Pantolon,Yok,Spor Ayakkabı,Yok,0
+2026-09-15,20.0,18.0,60,12.0,İnce Kazak,Kot pantolon,Ceket,Spor Ayakkabı,Şemsiye,0
+2026-09-25,17.0,15.0,65,15.0,Sweatshirt,Eşofman,Hırka,Spor Ayakkabı,Yok,0
+2026-09-28,15.0,13.0,70,18.0,Sweatshirt,Kot pantolon,Ceket,Bot,Yok,0
+2026-09-30,17.6,18.1,100,14.8,İnce Kazak,Eşofman,Hırka,Spor Ayakkabı,Yok,-1
+2026-09-30,17.6,18.1,100,14.8,Kısa kollu Tişört,Şort,Yok,Bot,Yok,1

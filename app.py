@@ -12,7 +12,7 @@ from hava_durumu import hava_durumunu_getir, hava_ikonu_url, hava_durumu_emoji
 from model import (
     tahmin_yap, veri_kaydet, veri_yukle, istatistikler,
     UST_GIYIM_SECENEKLERI, ALT_GIYIM_SECENEKLERI, DIS_GIYIM_SECENEKLERI,
-    AYAKKABI_SECENEKLERI, EKSTRA_SECENEKLERI
+    AYAKKABI_SECENEKLERI, EKSTRA_SECENEKLERI, GERI_BILDIRIM_SECENEKLERI
 )
 
 # ────────────────────────────────────────────────────────
@@ -429,6 +429,7 @@ with tab1:
                     💧 %{gun['nem']} &nbsp; 💨 {gun['ruzgar']} km/h
                     <br>
                     👕 {gun['ust']} &nbsp;|&nbsp; 👖 {gun['alt']} &nbsp;|&nbsp; 🧥 {gun['dis']} &nbsp;|&nbsp; 👟 {gun['ayakkabi']} &nbsp;|&nbsp; 🧣 {gun['ekstra']}
+                    &nbsp;&nbsp; {gun.get('geri_bildirim_etiket', '')}
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -488,7 +489,7 @@ with tab2:
                 index=0,
             )
 
-        col_d, col_e = st.columns(2)
+        col_d, col_e, col_f = st.columns(3)
         with col_d:
             secilen_ayakkabi = st.selectbox(
                 "👟 Ayakkabı",
@@ -501,6 +502,17 @@ with tab2:
                 EKSTRA_SECENEKLERI,
                 index=0,
             )
+        with col_f:
+            gb_secenekler = list(GERI_BILDIRIM_SECENEKLERI.values())
+            gb_anahtarlar = list(GERI_BILDIRIM_SECENEKLERI.keys())
+            secilen_gb_idx = st.selectbox(
+                "🎯 Nasıl Hissettin?",
+                range(len(gb_secenekler)),
+                format_func=lambda i: gb_secenekler[i],
+                index=1,  # Varsayılan: Tam Kararında
+                help="Bu geri bildirim, yapı zekanın kendini düzeltmesini sağlar.",
+            )
+            secilen_geri_bildirim = gb_anahtarlar[secilen_gb_idx]
 
         gonder = st.form_submit_button(
             "💾 Sisteme Kaydet ve Öğret",
@@ -520,6 +532,7 @@ with tab2:
                 dis=secilen_dis,
                 ayakkabi=secilen_ayakkabi,
                 ekstra=secilen_ekstra,
+                geri_bildirim=secilen_geri_bildirim,
             )
             if basarili:
                 st.markdown(f"""
@@ -588,9 +601,14 @@ with tab3:
 
         # Sütun isimlerini güzelleştir
         gorunum_df = df.copy()
+        # Geri bildirim değerlerini emoji etiketlere çevir
+        gorunum_df["Geri_Bildirim"] = gorunum_df["Geri_Bildirim"].map(
+            GERI_BILDIRIM_SECENEKLERI
+        ).fillna("❓")
         gorunum_df.columns = [
             "📅 Tarih", "🌡️ Sıcaklık", "🤒 Hissedilen",
-            "💧 Nem", "💨 Rüzgar", "👕 Üst", "👖 Alt", "🧥 Dış", "👟 Ayakkabı", "🧣 Ekstra"
+            "💧 Nem", "💨 Rüzgar", "👕 Üst", "👖 Alt", "🧥 Dış", "👟 Ayakkabı", "🧣 Ekstra",
+            "🎯 Geri Bildirim"
         ]
 
         # Tabloyu ters sırala (en yeni üstte)

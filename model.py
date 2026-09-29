@@ -38,20 +38,37 @@ EKSTRA_SECENEKLERI = [
 ]
 
 
+# Geri bildirim etiketleri — kullanıcı arayüzünde gösterilecek
+GERI_BILDIRIM_SECENEKLERI = {
+    -1: "🥶 Üşüdüm",
+     0: "👌 Tam Kararında",
+     1: "🥵 Terledim",
+}
+
+
 def veri_yukle() -> pd.DataFrame:
     """CSV dosyasından mevcut kıyafet verilerini yükler."""
     if not os.path.exists(CSV_DOSYASI):
         return pd.DataFrame(columns=[
             "Tarih", "Sicaklik", "Hissedilen", "Nem",
-            "Ruzgar", "Ust_Giyim", "Alt_Giyim", "Dis_Giyim", "Ayakkabi", "Ekstra"
+            "Ruzgar", "Ust_Giyim", "Alt_Giyim", "Dis_Giyim", "Ayakkabi", "Ekstra",
+            "Geri_Bildirim"
         ])
-    return pd.read_csv(CSV_DOSYASI)
+    df = pd.read_csv(CSV_DOSYASI)
+    # Eski veri setlerinde Geri_Bildirim sütunu yoksa ekle (varsayılan: 0 = Tam Kararında)
+    if "Geri_Bildirim" not in df.columns:
+        df["Geri_Bildirim"] = 0
+    return df
 
 
 def veri_kaydet(tarih: str, sicaklik: float, hissedilen: float,
-                nem: int, ruzgar: float, ust: str, alt: str, dis: str, ayakkabi: str, ekstra: str) -> bool:
+                nem: int, ruzgar: float, ust: str, alt: str, dis: str,
+                ayakkabi: str, ekstra: str, geri_bildirim: int = 0) -> bool:
     """
     Yeni bir kıyafet kaydını CSV dosyasına ekler.
+
+    Args:
+        geri_bildirim: -1 (Üşüdüm), 0 (Tam Kararında), 1 (Terledim)
 
     Returns:
         True = başarılı, False = hata
@@ -69,6 +86,7 @@ def veri_kaydet(tarih: str, sicaklik: float, hissedilen: float,
             "Dis_Giyim": dis,
             "Ayakkabi": ayakkabi,
             "Ekstra": ekstra,
+            "Geri_Bildirim": geri_bildirim,
         }])
         df = pd.concat([df, yeni_satir], ignore_index=True)
         df.to_csv(CSV_DOSYASI, index=False)
@@ -102,19 +120,29 @@ def tahmin_yap(sicaklik: float, hissedilen: float, nem: int, ruzgar: float) -> d
 
     # Feature'lar (hava verileri) ve label'lar (kıyafetler)
     ozellikler = ["Sicaklik", "Hissedilen", "Nem", "Ruzgar"]
-    X = df[ozellikler].values
-    y_ust = df["Ust_Giyim"].values
-    y_alt = df["Alt_Giyim"].values
-    y_dis = df["Dis_Giyim"].values
-    y_ayakkabi = df["Ayakkabi"].values
-    y_ekstra = df["Ekstra"].values
+    # Geri bildirim tabanlı veri filtreleme:
+    # "Tam Kararında" (0) olan kayıtlar tercih edilir — model rahat hissedilen
+    # kombinlerden öğrenir. Yeterli "iyi" veri yoksa tüm veri kullanılır.
+    iyi_veriler = df[df["Geri_Bildirim"] == 0]
+    if len(iyi_veriler) >= 3:
+        egitim_df = iyi_veriler
+    else:
+        egitim_df = df
+
+    # Feature'lar ve label'lar filtrelenmiş veriden alınır
+    X = egitim_df[ozellikler].values
+    y_ust = egitim_df["Ust_Giyim"].values
+    y_alt = egitim_df["Alt_Giyim"].values
+    y_dis = egitim_df["Dis_Giyim"].values
+    y_ayakkabi = egitim_df["Ayakkabi"].values
+    y_ekstra = egitim_df["Ekstra"].values
 
     # Ölçekleme — farklı birimlerdeki verileri eşitler
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
     # K sayısını veriye göre dinamik ayarla (çok az veriyse daha küçük k)
-    k = min(5, len(df))
+    k = min(5, len(egitim_df))
 
     # Her kategori için ayrı KNN modeli
     sonuclar = {}
@@ -153,6 +181,7 @@ def tahmin_yap(sicaklik: float, hissedilen: float, nem: int, ruzgar: float) -> d
     if benzer_gunler_indices is not None:
         for idx in benzer_gunler_indices:
             row = df.iloc[idx]
+            gb = int(row.get("Geri_Bildirim", 0))
             benzer_gunler.append({
                 "tarih": row["Tarih"],
                 "sicaklik": row["Sicaklik"],
@@ -164,6 +193,8 @@ def tahmin_yap(sicaklik: float, hissedilen: float, nem: int, ruzgar: float) -> d
                 "dis": row["Dis_Giyim"],
                 "ayakkabi": row["Ayakkabi"],
                 "ekstra": row["Ekstra"],
+                "geri_bildirim": gb,
+                "geri_bildirim_etiket": GERI_BILDIRIM_SECENEKLERI.get(gb, "❓"),
             })
 
     return {
@@ -183,6 +214,12 @@ def istatistikler() -> dict:
     if df.empty:
         return {"toplam": 0}
 
+    # Geri bildirim istatistikleri
+    gb = df["Geri_Bildirim"].value_counts()
+    tam_karari = int(gb.get(0, 0))
+    usudum = int(gb.get(-1, 0))
+    terledim = int(gb.get(1, 0))
+
     return {
         "toplam": len(df),
         "en_sik_ust": df["Ust_Giyim"].mode().iloc[0] if not df["Ust_Giyim"].mode().empty else "-",
@@ -191,4 +228,7 @@ def istatistikler() -> dict:
         "ort_sicaklik": round(df["Sicaklik"].mean(), 1),
         "min_sicaklik": df["Sicaklik"].min(),
         "max_sicaklik": df["Sicaklik"].max(),
+        "gb_tam_karari": tam_karari,
+        "gb_usudum": usudum,
+        "gb_terledim": terledim,
     }
