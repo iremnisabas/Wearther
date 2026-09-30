@@ -5,15 +5,17 @@ Wearther, bulunduğunuz şehrin anlık hava durumu verilerini çekerek, o gün i
 ## ✨ Özellikler
 
 - ⛅ **Canlı Hava Durumu:** OpenWeatherMap API kullanarak dilediğiniz şehrin anlık sıcaklık, hissedilen sıcaklık, nem ve rüzgar verilerini çeker.
-- 🧠 **Makine Öğrenmesi (KNN):** K-En Yakın Komşu (K-Nearest Neighbors) algoritması sayesinde, geçmiş verilerinizi analiz ederek yeni hava durumlarına en uygun kıyafet kombinini (Üst Giyim, Alt Giyim, Dış Giyim, Ayakkabı, Ekstra) önerir.
+- 🧠 **Makine Öğrenmesi (KNN):** K-En Yakın Komşu (K-Nearest Neighbors) algoritması sayesinde, geçmiş verilerinizi analiz ederek yeni hava durumlarına en uygun kıyafet kombinini (Üst Giyim, Alt Giyim, Dış Giyim, Ayakkabı, Ekstra) önerir. 
+- 🎯 **Akıllı Geri Bildirim Sistemi:** Önerilen kıyafetle nasıl hissettiğinizi (Üşüdüm, Tam Kararında, Terledim) belirterek yapay zekanın kendini sürekli geliştirmesini sağlayabilirsiniz.
 - 📈 **Sürekli Öğrenme:** Uygulamaya girdiğiniz her yeni kıyafet/hava durumu kaydı, modelin kendini güncellemesini ve size daha özel öneriler sunmasını sağlar.
 - 📊 **İstatistikler:** Hangi hava koşullarında neleri tercih ettiğinizi gösteren analiz ve istatistik sayfası.
-- 🎨 **Modern ve Kullanıcı Dostu Arayüz:** Streamlit kullanılarak geliştirilmiş, göz yormayan, modern ve şık bir arayüz.
+- 🎨 **Modern ve Kullanıcı Dostu Arayüz:** Saf (Vanilla) HTML, CSS ve JavaScript kullanılarak tasarlanmış; tam duyarlı (responsive), karanlık temalı (dark mode) ve çok şık bir web arayüzü.
 
 ## 🛠️ Teknolojiler
 
-- **[Python 3.8+](https://www.python.org/)**
-- **[Streamlit](https://streamlit.io/)**: Kullanıcı arayüzü (UI) geliştirme.
+- **[Python 3.8+](https://www.python.org/)**: Arka plan mantığı ve yapay zeka.
+- **[Flask](https://flask.palletsprojects.com/)**: RESTful API sunan hafif web sunucusu (Backend).
+- **HTML5 / CSS3 / Vanilla JS**: Ön yüz (Frontend) ve dinamik sayfa etkileşimleri.
 - **[Scikit-learn](https://scikit-learn.org/)**: Makine öğrenmesi (K-Nearest Neighbors algoritması) ve veri ölçekleme.
 - **[Pandas](https://pandas.pydata.org/)**: Veri manipülasyonu (`kiyafet_verileri.csv` üzerinde).
 - **[OpenWeatherMap API](https://openweathermap.org/)**: Gerçek zamanlı hava durumu verisi sağlama.
@@ -62,13 +64,14 @@ OPENWEATHER_API_KEY=sizin_api_anahtariniz_buraya
 
 ### 5. Uygulamayı Başlatın
 
-Tüm kurulumlar tamamlandıktan sonra uygulamayı çalıştırmak için aşağıdaki komutu girin:
+Tüm kurulumlar tamamlandıktan sonra arka uç (backend) sunucusunu çalıştırmak için aşağıdaki komutu girin:
 
 ```bash
-streamlit run app.py
+python server.py
 ```
+*(Eğer `run.bat` dosyası ile başlatmak isterseniz, Windows üzerinde doğrudan `run.bat` komutunu veya dosyasına çift tıklayarak da çalıştırabilirsiniz.)*
 
-Tarayıcınız otomatik olarak açılacak ve uygulama `http://localhost:8501` adresinde çalışmaya başlayacaktır.
+Tarayıcınızı açın ve `http://127.0.0.1:5000` adresine giderek Wearther'ı kullanmaya başlayın!
 
 ## 📊 Proje Analizi ve Mantığı
 
@@ -76,7 +79,7 @@ Uygulama arka planda üç temel adımla çalışır:
 
 1. **Veri Toplama:** `hava_durumu.py` üzerinden girilen şehrin o anki hava durumu (sıcaklık, hissedilen sıcaklık vb.) çekilir.
 2. **Tahmin (Prediction):** `model.py` içindeki KNN (K-Nearest Neighbors) algoritması, anlık hava durumu verilerini alır ve daha önce kaydedilmiş olan `kiyafet_verileri.csv` veri setindeki geçmiş günlerle karşılaştırır. Hava durumu açısından en çok benzeyen geçmiş günleri bularak bir kombin önerisi ve bu önerinin 'Güven Skoru'nu oluşturur.
-3. **Öğrenme (Training):** Kullanıcı, uygulamanın arayüzünden o gün gerçekten ne giydiğini sisteme kaydettiğinde, bu veri yeni bir satır olarak CSV dosyasına eklenir. Bir sonraki tahminde model bu yeni veriyi de hesaba katarak isabet oranını artırır.
+3. **Öğrenme (Training):** Kullanıcı, uygulamanın arayüzünden o gün gerçekten ne giydiğini ve nasıl hissettiğini ("Üşüdüm", "Tam Kararında", "Terledim") sisteme kaydettiğinde, bu veri yeni bir satır olarak CSV dosyasına eklenir. Model bir sonraki tahminde sadece başarılı ("Tam Kararında") geri bildirimleri dikkate alarak isabet oranını sürekli artırır.
 
 ## 🤝 Katkıda Bulunma
 

@@ -4,7 +4,6 @@ OpenWeatherMap API kullanarak anlık hava durumunu çeker.
 """
 
 import requests
-import streamlit as st
 from datetime import datetime
 
 import os
@@ -56,10 +55,10 @@ def hava_durumunu_getir(sehir: str, api_key: str = None) -> dict | None:
         }
 
     except requests.exceptions.RequestException as e:
-        st.error(f"❌ Hava durumu alınamadı: {e}")
+        print(f"❌ Hava durumu alınamadı: {e}")
         return None
     except (KeyError, IndexError) as e:
-        st.error(f"❌ Hava durumu verisi işlenemedi: {e}")
+        print(f"❌ Hava durumu verisi işlenemedi: {e}")
         return None
 
 

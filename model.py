@@ -180,7 +180,7 @@ def tahmin_yap(sicaklik: float, hissedilen: float, nem: int, ruzgar: float) -> d
     benzer_gunler = []
     if benzer_gunler_indices is not None:
         for idx in benzer_gunler_indices:
-            row = df.iloc[idx]
+            row = egitim_df.iloc[idx]
             gb = int(row.get("Geri_Bildirim", 0))
             benzer_gunler.append({
                 "tarih": row["Tarih"],

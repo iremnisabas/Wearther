@@ -1,0 +1,630 @@
+/* ═══════════════════════════════════════════════════════════
+   🧥 Wearther — Frontend Application
+   ═══════════════════════════════════════════════════════════ */
+
+// ─── State ───
+let currentWeather = null;
+let currentCity = 'Istanbul';
+
+const FEEDBACK_MAP = {
+    '-1': '🥶 Üşüdüm',
+    '0': '👌 Tam Kararında',
+    '1': '🥵 Terledim'
+};
+
+
+// ─── Initialization ───
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+    setupTabs();
+    setupSidebar();
+    setupCitySearch();
+    setupForm();
+    await loadOptions();
+    await refreshData();
+}
+
+
+// ═══════════════════════════════════════════
+// TAB MANAGEMENT
+// ═══════════════════════════════════════════
+
+function setupTabs() {
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.dataset.tab;
+
+            // Deactivate all
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.remove('active');
+                t.setAttribute('aria-selected', 'false');
+            });
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+            // Activate matching tabs (both desktop and mobile)
+            document.querySelectorAll('.tab[data-tab="' + targetTab + '"]').forEach(t => {
+                t.classList.add('active');
+                t.setAttribute('aria-selected', 'true');
+            });
+
+            const panelId = 'panel-' + targetTab;
+            document.getElementById(panelId).classList.add('active');
+
+            // Load history data lazily when switching to that tab
+            if (targetTab === 'gecmis') {
+                loadHistory();
+            }
+
+            // Close sidebar on mobile
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                if (sidebar) sidebar.classList.remove('open');
+                if (overlay) overlay.classList.remove('active');
+            }
+        });
+    });
+}
+
+
+// ═══════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════
+
+function setupSidebar() {
+    const toggle = document.getElementById('sidebar-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const body = document.body;
+
+    toggle.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        } else {
+            body.classList.toggle('sidebar-closed');
+        }
+    });
+
+    overlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+    });
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+    });
+}
+
+function setupCitySearch() {
+    const input = document.getElementById('sehir-input');
+    const btn = document.getElementById('sehir-btn');
+
+    btn.addEventListener('click', () => {
+        const city = input.value.trim();
+        if (city) {
+            currentCity = city;
+            refreshData();
+        }
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const city = input.value.trim();
+            if (city) {
+                currentCity = city;
+                refreshData();
+            }
+        }
+    });
+}
+
+
+// ═══════════════════════════════════════════
+// DATA LOADING
+// ═══════════════════════════════════════════
+
+async function refreshData(showLoadingScreen = true) {
+    if (showLoadingScreen) {
+        setLoading(true);
+        setContent(false);
+        hideError();
+    }
+
+    try {
+        const res = await fetch('/api/oneri?sehir=' + encodeURIComponent(currentCity));
+        if (!res.ok) throw new Error('API hatası');
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        currentWeather = data.hava;
+        renderWeatherCard(data.hava);
+        renderMiniWeatherCard(data.hava);
+        renderRecommendations(data.oneri, data.hava);
+
+        await loadStats();
+
+        if (showLoadingScreen) {
+            setLoading(false);
+            setContent(true);
+        }
+    } catch (err) {
+        console.error('Veri yüklenirken hata:', err);
+        if (showLoadingScreen) {
+            setLoading(false);
+            showError();
+        } else {
+            showToast('Veri güncellenirken hata oluştu.', 'error');
+        }
+    }
+}
+
+async function loadStats() {
+    try {
+        const res = await fetch('/api/istatistikler');
+        const stats = await res.json();
+        renderSidebarStats(stats);
+    } catch (err) {
+        console.error('İstatistik yüklenirken hata:', err);
+    }
+}
+
+async function loadHistory() {
+    const container = document.getElementById('gecmis-content');
+    container.innerHTML = '<div class="loading-screen" style="min-height:30vh"><div class="spinner"></div></div>';
+
+    try {
+        const [histRes, statsRes] = await Promise.all([
+            fetch('/api/gecmis'),
+            fetch('/api/istatistikler')
+        ]);
+        const history = await histRes.json();
+        const stats = await statsRes.json();
+
+        if (history.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="es-icon">📭</div>
+                    <h3>Henüz hiç kayıt yok</h3>
+                    <p>"Bugün Ne Giydin?" sekmesinden ilk kaydını gir!</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Stats cards
+        let html = `
+            <div class="stats-grid">
+                <div class="stat-card" style="animation-delay:0.05s">
+                    <div class="sc-value">${stats.toplam}</div>
+                    <div class="sc-label">Toplam Kayıt</div>
+                </div>
+                <div class="stat-card" style="animation-delay:0.1s">
+                    <div class="sc-value">${stats.ort_sicaklik ?? '-'}°</div>
+                    <div class="sc-label">Ort. Sıcaklık</div>
+                </div>
+                <div class="stat-card" style="animation-delay:0.15s">
+                    <div class="sc-value">${stats.min_sicaklik ?? '-'}°</div>
+                    <div class="sc-label">Min Sıcaklık</div>
+                </div>
+                <div class="stat-card" style="animation-delay:0.2s">
+                    <div class="sc-value">${stats.max_sicaklik ?? '-'}°</div>
+                    <div class="sc-label">Max Sıcaklık</div>
+                </div>
+            </div>
+        `;
+
+        // Table
+        const reversed = [...history].reverse();
+        html += `
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>📅 Tarih</th>
+                            <th>🌡️ Sıcaklık</th>
+                            <th>🤒 Hissedilen</th>
+                            <th>💧 Nem</th>
+                            <th>💨 Rüzgar</th>
+                            <th>👕 Üst</th>
+                            <th>👖 Alt</th>
+                            <th>🧥 Dış</th>
+                            <th>👟 Ayakkabı</th>
+                            <th>🧣 Ekstra</th>
+                            <th>🎯 Geri Bildirim</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${reversed.map(row => `
+                            <tr>
+                                <td>${row.Tarih}</td>
+                                <td>${row.Sicaklik}°C</td>
+                                <td>${row.Hissedilen}°C</td>
+                                <td>%${row.Nem}</td>
+                                <td>${row.Ruzgar} km/h</td>
+                                <td>${row.Ust_Giyim}</td>
+                                <td>${row.Alt_Giyim}</td>
+                                <td>${row.Dis_Giyim}</td>
+                                <td>${row.Ayakkabi}</td>
+                                <td>${row.Ekstra}</td>
+                                <td>${FEEDBACK_MAP[String(row.Geri_Bildirim)] || '❓'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        // Actions
+        html += `
+            <div class="actions-row">
+                <a href="/api/indir" class="btn-secondary" download>📥 Verileri CSV Olarak İndir</a>
+            </div>
+            <details class="delete-section">
+                <summary>🗑️ Son Kaydı Sil</summary>
+                <div class="delete-content">
+                    <p class="warning-text">⚠️ Bu işlem geri alınamaz!</p>
+                    <button class="btn-danger" onclick="deleteLastRecord()">Son kaydı sil</button>
+                </div>
+            </details>
+        `;
+
+        container.innerHTML = html;
+
+    } catch (err) {
+        console.error('Geçmiş yüklenirken hata:', err);
+        container.innerHTML = '<div class="info-box" style="border-left-color:#ef4444">❌ Veriler yüklenirken hata oluştu.</div>';
+    }
+}
+
+
+// ═══════════════════════════════════════════
+// RENDER FUNCTIONS
+// ═══════════════════════════════════════════
+
+function renderWeatherCard(hava) {
+    const dateStr = new Date().toLocaleDateString('tr-TR', {
+        day: 'numeric', month: 'long', year: 'numeric'
+    });
+
+    document.getElementById('weather-card-container').innerHTML = `
+        <div class="weather-card">
+            <div class="wc-header">${hava.emoji} ${hava.sehir} — ${hava.aciklama}</div>
+            <div class="wc-temp">${hava.sicaklik}°C</div>
+            <div class="wc-details">
+                <span>🌡️ Hissedilen: ${hava.hissedilen}°C</span>
+                <span>💧 Nem: ${hava.nem}%</span>
+                <span>💨 Rüzgar: ${hava.ruzgar} km/h</span>
+                <span>📅 ${dateStr}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderMiniWeatherCard(hava) {
+    document.getElementById('mini-weather-container').innerHTML = `
+        <div class="mini-weather-card">
+            <div class="mwc-title">📍 Bugünkü Hava — ${hava.sehir}</div>
+            <div class="mwc-details">
+                <span>🌡️ ${hava.sicaklik}°C</span>
+                <span>🤒 Hiss: ${hava.hissedilen}°C</span>
+                <span>💧 %${hava.nem}</span>
+                <span>💨 ${hava.ruzgar} km/h</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderRecommendations(oneri, hava) {
+    const recContainer = document.getElementById('recommendations-container');
+    const simContainer = document.getElementById('similar-days-container');
+    const infoContainer = document.getElementById('data-info-container');
+
+    if (!oneri) {
+        recContainer.innerHTML = `
+            <div class="info-box">
+                🧠 <strong>Henüz yeterli veri yok.</strong><br>
+                Sistemin seni tanıması için "Bugün Ne Giydin?" sekmesinden en az 3 gün veri girmelisin.
+                Ne kadar çok veri girersen, öneriler o kadar isabetli olur!
+            </div>
+        `;
+        simContainer.innerHTML = '';
+        infoContainer.innerHTML = '';
+        return;
+    }
+
+    // Build recommendation cards
+    function recCard(emoji, kategori, data, delay) {
+        const altChips = (data.alternatifler || []).slice(1, 3)
+            .map(a => '<span class="alt-chip">' + a.kiyafet + ' %' + a.oran + '</span>')
+            .join('');
+
+        return `
+            <div class="rec-card" style="animation-delay:${delay}s">
+                <div class="rc-category">${emoji} ${kategori}</div>
+                <div class="rc-item">${data.tahmin}</div>
+                <div class="rc-confidence">Güven: %${data.guven}</div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" data-width="${data.guven}"></div>
+                </div>
+                <div class="alt-chips">${altChips}</div>
+            </div>
+        `;
+    }
+
+    let html = '<h3 class="rec-section-title">🤖 Yapay Zeka Önerisi</h3>';
+    html += '<div class="rec-grid">';
+    html += recCard('👕', 'Üst Giyim', oneri.ust_giyim, 0.05);
+    html += recCard('👖', 'Alt Giyim', oneri.alt_giyim, 0.1);
+    html += recCard('🧥', 'Dış Giyim', oneri.dis_giyim, 0.15);
+    html += '</div>';
+    html += '<div class="rec-grid-2">';
+    html += recCard('👟', 'Ayakkabı', oneri.ayakkabi, 0.2);
+    html += recCard('🧣', 'Ekstralar', oneri.ekstra, 0.25);
+    html += '</div>';
+
+    recContainer.innerHTML = html;
+
+    // Animate confidence bars after a short delay
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            document.querySelectorAll('.confidence-fill').forEach(bar => {
+                bar.style.width = bar.dataset.width + '%';
+            });
+        }, 100);
+    });
+
+    // Similar days
+    if (oneri.benzer_gunler && oneri.benzer_gunler.length > 0) {
+        let simHtml = '<h3 class="similar-section-title">📅 Bu Havaya En Benzer Geçmiş Günler</h3>';
+        oneri.benzer_gunler.slice(0, 3).forEach((gun, i) => {
+            simHtml += `
+                <div class="similar-day" style="animation-delay:${0.05 * (i + 1)}s">
+                    <span class="sd-date">📌 ${gun.tarih}</span>
+                    <div class="sd-weather">
+                        🌡️ ${gun.sicaklik}°C (hiss: ${gun.hissedilen}°C) &nbsp;
+                        💧 %${gun.nem} &nbsp; 💨 ${gun.ruzgar} km/h
+                    </div>
+                    <div class="sd-clothes">
+                        👕 ${gun.ust} &nbsp;|&nbsp; 👖 ${gun.alt} &nbsp;|&nbsp;
+                        🧥 ${gun.dis} &nbsp;|&nbsp; 👟 ${gun.ayakkabi} &nbsp;|&nbsp;
+                        🧣 ${gun.ekstra}
+                        &nbsp;&nbsp; ${gun.geri_bildirim_etiket || ''}
+                    </div>
+                </div>
+            `;
+        });
+        simContainer.innerHTML = simHtml;
+    } else {
+        simContainer.innerHTML = '';
+    }
+
+    // Data info
+    infoContainer.innerHTML = `
+        <div class="info-box" style="margin-top:20px">
+            📈 Model şu an <strong>${oneri.toplam_veri}</strong> günlük veriyle eğitildi.
+            Ne kadar çok veri girersen, öneriler o kadar kişiselleşir!
+        </div>
+    `;
+}
+
+function renderSidebarStats(stats) {
+    const container = document.getElementById('sidebar-stats');
+    if (!stats || stats.toplam === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = `
+        <h3 class="section-title">📊 Özet</h3>
+        <div class="sidebar-stat">
+            <span>Toplam Kayıt</span>
+            <span class="stat-value">${stats.toplam}</span>
+        </div>
+        <div class="sidebar-stat">
+            <span>En Sık Üst</span>
+            <span class="stat-value">${stats.en_sik_ust || '-'}</span>
+        </div>
+        <div class="sidebar-stat">
+            <span>En Sık Alt</span>
+            <span class="stat-value">${stats.en_sik_alt || '-'}</span>
+        </div>
+        <div class="sidebar-stat">
+            <span>Ort. Sıcaklık</span>
+            <span class="stat-value">${stats.ort_sicaklik ?? '-'}°C</span>
+        </div>
+    `;
+}
+
+
+// ═══════════════════════════════════════════
+// FORM HANDLING
+// ═══════════════════════════════════════════
+
+async function loadOptions() {
+    try {
+        const res = await fetch('/api/secenekler');
+        const opts = await res.json();
+
+        populateSelect('select-ust', opts.ust_giyim);
+        populateSelect('select-alt', opts.alt_giyim, 1);
+        populateSelect('select-dis', opts.dis_giyim);
+        populateSelect('select-ayakkabi', opts.ayakkabi);
+        populateSelect('select-ekstra', opts.ekstra);
+    } catch (err) {
+        console.error('Seçenekler yüklenirken hata:', err);
+    }
+}
+
+function populateSelect(id, options, defaultIndex) {
+    defaultIndex = defaultIndex || 0;
+    const select = document.getElementById(id);
+    if (!select) return;
+    select.innerHTML = options.map(function (opt, i) {
+        return '<option value="' + opt + '"' + (i === defaultIndex ? ' selected' : '') + '>' + opt + '</option>';
+    }).join('');
+}
+
+function setupForm() {
+    const form = document.getElementById('kiyafet-formu');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (!currentWeather) {
+            showToast('Hava durumu verisi henüz yüklenmedi.', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('btn-kaydet');
+        btn.disabled = true;
+        btn.textContent = '⏳ Kaydediliyor...';
+
+        const gbRadio = document.querySelector('input[name="geri-bildirim"]:checked');
+        const geri_bildirim = gbRadio ? parseInt(gbRadio.value) : 0;
+
+        const data = {
+            tarih: currentWeather.tarih,
+            sicaklik: currentWeather.sicaklik,
+            hissedilen: currentWeather.hissedilen,
+            nem: currentWeather.nem,
+            ruzgar: currentWeather.ruzgar,
+            ust: document.getElementById('select-ust').value,
+            alt: document.getElementById('select-alt').value,
+            dis: document.getElementById('select-dis').value,
+            ayakkabi: document.getElementById('select-ayakkabi').value,
+            ekstra: document.getElementById('select-ekstra').value,
+            geri_bildirim: geri_bildirim,
+        };
+
+        try {
+            const res = await fetch('/api/kaydet', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            const result = await res.json();
+
+            if (result.basarili) {
+                showToast(
+                    '✅ Kaydedildi! ' + data.ust + ' + ' + data.alt + ' + ' + data.dis +
+                    ' + ' + data.ayakkabi + ' — Sistem bu veriyi öğrendi 🧠',
+                    'success'
+                );
+                createConfetti();
+
+                // Reset form to defaults
+                form.reset();
+                document.querySelector('input[name="geri-bildirim"][value="0"]').checked = true;
+
+                // Refresh stats and recommendations silently
+                await loadStats();
+                await refreshData(false);
+            } else {
+                showToast('❌ Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.', 'error');
+            }
+        } catch (err) {
+            showToast('❌ Sunucu bağlantı hatası.', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '💾 Sisteme Kaydet ve Öğret';
+        }
+    });
+}
+
+
+// ═══════════════════════════════════════════
+// DELETE RECORD
+// ═══════════════════════════════════════════
+
+async function deleteLastRecord() {
+    if (!confirm('Son kaydı silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return;
+
+    try {
+        const res = await fetch('/api/son-kayit-sil', { method: 'DELETE' });
+        const result = await res.json();
+
+        if (result.basarili) {
+            showToast('🗑️ Son kayıt silindi.', 'success');
+            loadHistory();
+            loadStats();
+        } else {
+            showToast('❌ Silinecek kayıt bulunamadı.', 'error');
+        }
+    } catch (err) {
+        showToast('❌ Silme sırasında hata oluştu.', 'error');
+    }
+}
+
+
+// ═══════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════
+
+function setLoading(show) {
+    document.getElementById('loading-screen').style.display = show ? 'flex' : 'none';
+}
+
+function setContent(show) {
+    document.getElementById('content-wrapper').style.display = show ? 'block' : 'none';
+}
+
+function showError() {
+    document.getElementById('error-screen').style.display = 'flex';
+    document.getElementById('content-wrapper').style.display = 'none';
+}
+
+function hideError() {
+    document.getElementById('error-screen').style.display = 'none';
+}
+
+
+// ═══════════════════════════════════════════
+// TOAST NOTIFICATIONS
+// ═══════════════════════════════════════════
+
+function showToast(message, type) {
+    type = type || 'success';
+    var container = document.getElementById('toast-container');
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    requestAnimationFrame(function () {
+        toast.classList.add('show');
+    });
+
+    setTimeout(function () {
+        toast.classList.remove('show');
+        setTimeout(function () { toast.remove(); }, 400);
+    }, 4000);
+}
+
+
+// ═══════════════════════════════════════════
+// CONFETTI 🎉
+// ═══════════════════════════════════════════
+
+function createConfetti() {
+    var colors = ['#a78bfa', '#667eea', '#764ba2', '#10b981', '#f59e0b', '#ec4899'];
+    for (var i = 0; i < 60; i++) {
+        var el = document.createElement('span');
+        el.className = 'confetti';
+        el.style.left = Math.random() * 100 + '%';
+        el.style.animationDelay = Math.random() * 2 + 's';
+        el.style.animationDuration = (2 + Math.random() * 2) + 's';
+        el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        el.style.width = (6 + Math.random() * 8) + 'px';
+        el.style.height = (6 + Math.random() * 8) + 'px';
+        el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        document.body.appendChild(el);
+        (function (element) {
+            setTimeout(function () { element.remove(); }, 5000);
+        })(el);
+    }
+}
