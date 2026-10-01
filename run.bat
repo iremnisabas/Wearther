@@ -1,2 +1,3 @@
 @echo off
-python server.py
+call .venv\Scripts\python.exe server.py
+pause
