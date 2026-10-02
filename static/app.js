@@ -146,6 +146,7 @@ async function refreshData(showLoadingScreen = true) {
         renderWeatherCard(data.hava);
         renderMiniWeatherCard(data.hava);
         renderRecommendations(data.oneri, data.hava);
+        prefillForm(data.oneri);
 
         await loadStats();
 
@@ -468,6 +469,26 @@ function populateSelect(id, options, defaultIndex) {
     select.innerHTML = options.map(function (opt, i) {
         return '<option value="' + opt + '"' + (i === defaultIndex ? ' selected' : '') + '>' + opt + '</option>';
     }).join('');
+}
+
+function prefillForm(oneri) {
+    if (!oneri) return;
+
+    if (oneri.ust_giyim && oneri.ust_giyim.tahmin) {
+        document.getElementById('select-ust').value = oneri.ust_giyim.tahmin;
+    }
+    if (oneri.alt_giyim && oneri.alt_giyim.tahmin) {
+        document.getElementById('select-alt').value = oneri.alt_giyim.tahmin;
+    }
+    if (oneri.dis_giyim && oneri.dis_giyim.tahmin) {
+        document.getElementById('select-dis').value = oneri.dis_giyim.tahmin;
+    }
+    if (oneri.ayakkabi && oneri.ayakkabi.tahmin) {
+        document.getElementById('select-ayakkabi').value = oneri.ayakkabi.tahmin;
+    }
+    if (oneri.ekstra && oneri.ekstra.tahmin) {
+        document.getElementById('select-ekstra').value = oneri.ekstra.tahmin;
+    }
 }
 
 function setupForm() {
