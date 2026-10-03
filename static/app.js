@@ -362,26 +362,31 @@ function _parseWeather(hava) {
     } else if (desc.includes('yağmur') || desc.includes('sağanak') || desc.includes('çise') || icon.startsWith('09') || icon.startsWith('10')) {
         cond = 'rain';
         rain = desc.includes('hafif') || desc.includes('çise') ? 'light'
-             : desc.includes('şiddetli') || desc.includes('sağanak') || humidity > 85 ? 'heavy'
-             : 'moderate';
+            : desc.includes('şiddetli') || desc.includes('sağanak') || humidity > 85 ? 'heavy'
+                : 'moderate';
     } else if (desc.includes('sis') || desc.includes('pus') || icon.startsWith('50')) {
         cond = 'mist';
-    } else if (desc.includes('kapalı') || icon.startsWith('04')) {
+    } else if (desc.includes('kapalı') || desc.includes('çok bulutlu')) {
         cond = 'clouds';
-    } else if (desc.includes('bulut') || desc.includes('parçalı') || icon.startsWith('02') || icon.startsWith('03')) {
+    } else if (desc.includes('parçalı') || icon.startsWith('03')) {
+        cond = 'scattered-clouds';
+    } else if (desc.includes('bulut') || icon.startsWith('02')) {
         cond = 'few-clouds';
+    } else if (icon.startsWith('04')) {
+        cond = 'clouds';
     }
 
     let theme, sun = false, moon = false, cloudCount = 0;
     switch (cond) {
-        case 'clear':       theme = isNight ? 'wc-theme-clear-night' : 'wc-theme-clear-day'; if (isNight) moon = true; else sun = true; break;
-        case 'few-clouds':  theme = isNight ? 'wc-theme-few-clouds-night' : 'wc-theme-few-clouds-day'; cloudCount = 2; if (isNight) moon = true; else sun = true; break;
-        case 'clouds':      theme = 'wc-theme-clouds'; cloudCount = 4; if (isNight) moon = true; else sun = true; break;
-        case 'rain':        theme = 'wc-theme-rain'; cloudCount = 5; break;
-        case 'thunderstorm':theme = 'wc-theme-thunderstorm'; cloudCount = 5; break;
-        case 'snow':        theme = 'wc-theme-snow'; cloudCount = 4; break;
-        case 'mist':        theme = 'wc-theme-mist'; cloudCount = 2; if (isNight) moon = true; else sun = true; break;
-        default:            theme = 'wc-theme-clear-day'; sun = true;
+        case 'clear': theme = isNight ? 'wc-theme-clear-night' : 'wc-theme-clear-day'; if (isNight) moon = true; else sun = true; break;
+        case 'few-clouds': theme = isNight ? 'wc-theme-few-clouds-night' : 'wc-theme-few-clouds-day'; cloudCount = 2; if (isNight) moon = true; else sun = true; break;
+        case 'scattered-clouds': theme = isNight ? 'wc-theme-few-clouds-night' : 'wc-theme-few-clouds-day'; cloudCount = 3; if (isNight) moon = true; else sun = true; break;
+        case 'clouds': theme = 'wc-theme-clouds'; cloudCount = 4; break;
+        case 'rain': theme = 'wc-theme-rain'; cloudCount = 5; break;
+        case 'thunderstorm': theme = 'wc-theme-thunderstorm'; cloudCount = 5; break;
+        case 'snow': theme = 'wc-theme-snow'; cloudCount = 4; break;
+        case 'mist': theme = 'wc-theme-mist'; cloudCount = 2; if (isNight) moon = true; else sun = true; break;
+        default: theme = 'wc-theme-clear-day'; sun = true;
     }
     return { cond, isNight, wind, humidity, rain, theme, sun, moon, cloudCount };
 }
@@ -455,12 +460,25 @@ function _initWeatherCanvas(w) {
     _wcResizeObs.observe(card);
 
     const { cond, wind, rain, humidity } = w;
-    const drops = [], splashes = [], streaks = [], flakes = [], motes = [];
+    const drops = [], splashes = [], streaks = [], flakes = [], motes = [], lightnings = [];
+
+    function createLightning() {
+        const x = canvas.width * 0.1 + Math.random() * canvas.width * 0.8;
+        const bolt = [];
+        let cx = x, cy = 0;
+        bolt.push({ x: cx, y: cy });
+        while (cy < canvas.height) {
+            cx += (Math.random() - 0.5) * 60; // branch left/right
+            cy += 15 + Math.random() * 35; // branch down
+            bolt.push({ x: cx, y: cy });
+        }
+        lightnings.push({ path: bolt, life: 1 });
+    }
 
     // Rain
     if (cond === 'rain' || cond === 'thunderstorm') {
-        const n = rain === 'light' ? 30 : rain === 'heavy' ? 130 : 65;
-        const sm = rain === 'light' ? 0.8 : rain === 'heavy' ? 1.35 : 1;
+        const n = rain === 'light' ? 15 : rain === 'heavy' ? 65 : 32;
+        const sm = rain === 'light' ? 0.5 : rain === 'heavy' ? 0.8 : 0.6;
         for (let i = 0; i < n; i++) drops.push({
             x: Math.random() * (canvas.width + 160) - 80, y: Math.random() * canvas.height,
             len: (14 + Math.random() * 16) * sm, speed: (14 + Math.random() * 8) * sm,
@@ -500,8 +518,40 @@ function _initWeatherCanvas(w) {
         // Lightning
         if (cond === 'thunderstorm') {
             lFrame++;
-            if (lFrame >= lNext) { lFlash = 0.5; lNext = lFrame + 180 + Math.random() * 260; }
-            if (lFlash > 0) { ctx.fillStyle = `rgba(255,255,255,${lFlash})`; ctx.fillRect(0, 0, canvas.width, canvas.height); lFlash -= 0.06; }
+            if (lFrame >= lNext) {
+                lFlash = 0.6;
+                lNext = lFrame + 120 + Math.random() * 200;
+                createLightning();
+                if (Math.random() > 0.6) createLightning(); // bazen çift yıldırım
+            }
+            if (lFlash > 0) {
+                ctx.fillStyle = `rgba(255,255,255,${lFlash * 0.4})`; // soft background flash
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                lFlash -= 0.05;
+            }
+
+            // Draw bolts
+            for (let i = lightnings.length - 1; i >= 0; i--) {
+                const l = lightnings[i];
+                ctx.beginPath();
+                ctx.moveTo(l.path[0].x, l.path[0].y);
+                for (let j = 1; j < l.path.length; j++) {
+                    ctx.lineTo(l.path[j].x, l.path[j].y);
+                }
+
+                // Bolt outer glow
+                ctx.strokeStyle = `rgba(220, 230, 255, ${l.life * 0.6})`;
+                ctx.lineWidth = 6 + Math.random() * 4;
+                ctx.stroke();
+
+                // Bolt core
+                ctx.strokeStyle = `rgba(255, 255, 255, ${l.life})`;
+                ctx.lineWidth = 1.5 + Math.random() * 2;
+                ctx.stroke();
+
+                l.life -= 0.1; // kaybolma hızı
+                if (l.life <= 0) lightnings.splice(i, 1);
+            }
         }
 
         // Rain
