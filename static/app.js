@@ -18,6 +18,7 @@ const FEEDBACK_MAP = {
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
+    setupThemeToggle();
     document.getElementById('sehir-input').value = currentCity;
     setupTabs();
     setupSidebar();
@@ -26,6 +27,51 @@ async function init() {
     setupForm();
     await loadOptions();
     await refreshData();
+}
+
+// ─── Theme Management ───
+const THEME_STORAGE_KEY = 'wearther_theme';
+
+function getPreferredTheme() {
+    try {
+        const saved = localStorage.getItem(THEME_STORAGE_KEY);
+        if (saved === 'dark' || saved === 'light') return saved;
+    } catch (e) {}
+    return 'dark'; // Varsayılan: Koyu tema
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (document.body) {
+        document.body.setAttribute('data-theme', theme);
+    }
+    try {
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch (e) {}
+
+    const toggleBtn = document.getElementById('theme-toggle-btn');
+    const toggleLabel = document.getElementById('theme-toggle-label');
+    if (toggleBtn) {
+        toggleBtn.setAttribute('data-current-theme', theme);
+        toggleBtn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+    }
+    if (toggleLabel) {
+        toggleLabel.textContent = theme === 'dark' ? 'Koyu Tema' : 'Açık Tema';
+    }
+}
+
+function setupThemeToggle() {
+    const currentTheme = getPreferredTheme();
+    applyTheme(currentTheme);
+
+    const toggleBtn = document.getElementById('theme-toggle-btn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            const active = document.documentElement.getAttribute('data-theme') || 'light';
+            const next = active === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+        });
+    }
 }
 
 
@@ -151,7 +197,7 @@ function renderPinnedCities() {
     if (!container) return;
 
     if (pinnedCities.length === 0) {
-        container.innerHTML = '<div style="font-size:13px; color:rgba(255,255,255,0.4); font-style:italic; padding: 4px 0;">Henüz sabitlenmiş bir şehir yok.</div>';
+        container.innerHTML = '<div style="font-size:13px; color:rgba(233,213,255,0.5); font-style:italic; padding: 4px 0;">Henüz sabitlenmiş bir şehir yok.</div>';
         return;
     }
 
@@ -658,7 +704,7 @@ function renderRecommendations(oneri, hava) {
         `;
     }
 
-    let html = '<h3 class="rec-section-title"><i class="fas fa-robot" style="color: #a78bfa;"></i> Yapay Zeka Önerisi</h3>';
+    let html = '<h3 class="rec-section-title"><i class="fas fa-robot" style="color: var(--accent);"></i> Yapay Zeka Önerisi</h3>';
     html += '<div class="rec-grid">';
     html += recCard('👕', 'Üst Giyim', oneri.ust_giyim, 0.05);
     html += recCard('👖', 'Alt Giyim', oneri.alt_giyim, 0.1);
@@ -682,7 +728,7 @@ function renderRecommendations(oneri, hava) {
 
     // Similar days
     if (oneri.benzer_gunler && oneri.benzer_gunler.length > 0) {
-        let simHtml = '<h3 class="similar-section-title"><i class="fas fa-calendar-days" style="color: #60a5fa;"></i> Bu Havaya En Benzer Geçmiş Günler</h3>';
+        let simHtml = '<h3 class="similar-section-title"><i class="fas fa-calendar-days" style="color: var(--accent);"></i> Bu Havaya En Benzer Geçmiş Günler</h3>';
         oneri.benzer_gunler.slice(0, 3).forEach((gun, i) => {
             simHtml += `
                 <div class="similar-day" style="animation-delay:${0.05 * (i + 1)}s">
@@ -932,7 +978,7 @@ function showToast(message, type) {
 // ═══════════════════════════════════════════
 
 function createConfetti() {
-    var colors = ['#a78bfa', '#667eea', '#764ba2', '#10b981', '#f59e0b', '#ec4899'];
+    var colors = ['#c084fc', '#d8b4fe', '#a855f7', '#e9d5ff', '#10b981', '#f472b6'];
     for (var i = 0; i < 60; i++) {
         var el = document.createElement('span');
         el.className = 'confetti';
