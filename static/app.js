@@ -149,12 +149,12 @@ function setupCitySearch() {
 function renderPinnedCities() {
     const container = document.getElementById('pinned-cities');
     if (!container) return;
-    
+
     if (pinnedCities.length === 0) {
         container.innerHTML = '<div style="font-size:13px; color:rgba(255,255,255,0.4); font-style:italic; padding: 4px 0;">Henüz sabitlenmiş bir şehir yok.</div>';
         return;
     }
-    
+
     container.innerHTML = pinnedCities.map(city => `
         <div class="pinned-city-item">
             <span class="pinned-city-name" onclick="loadPinnedCity('${city}')">${city}</span>
@@ -163,13 +163,13 @@ function renderPinnedCities() {
     `).join('');
 }
 
-window.loadPinnedCity = function(city) {
+window.loadPinnedCity = function (city) {
     document.getElementById('sehir-input').value = city;
     currentCity = city;
     refreshData();
 };
 
-window.removePinnedCity = function(city) {
+window.removePinnedCity = function (city) {
     pinnedCities = pinnedCities.filter(c => c !== city);
     localStorage.setItem('pinnedCities', JSON.stringify(pinnedCities));
     renderPinnedCities();
@@ -340,26 +340,210 @@ async function loadHistory() {
 
 
 // ═══════════════════════════════════════════
-// RENDER FUNCTIONS
+// RENDER FUNCTIONS & DYNAMIC WEATHER ATMOSPHERE
 // ═══════════════════════════════════════════
 
+let _wcAnimId = null;
+let _wcResizeObs = null;
+
+function _parseWeather(hava) {
+    const desc = (hava.aciklama || '').toLowerCase();
+    const icon = hava.ikon || '01d';
+    const isNight = icon.endsWith('n');
+    const wind = parseFloat(hava.ruzgar) || 0;
+    const humidity = parseInt(hava.nem) || 50;
+
+    let cond = 'clear', rain = 'none';
+
+    if (desc.includes('fırtına') || desc.includes('gök gürültü') || icon.startsWith('11')) {
+        cond = 'thunderstorm'; rain = 'heavy';
+    } else if (desc.includes('kar') || icon.startsWith('13')) {
+        cond = 'snow';
+    } else if (desc.includes('yağmur') || desc.includes('sağanak') || desc.includes('çise') || icon.startsWith('09') || icon.startsWith('10')) {
+        cond = 'rain';
+        rain = desc.includes('hafif') || desc.includes('çise') ? 'light'
+             : desc.includes('şiddetli') || desc.includes('sağanak') || humidity > 85 ? 'heavy'
+             : 'moderate';
+    } else if (desc.includes('sis') || desc.includes('pus') || icon.startsWith('50')) {
+        cond = 'mist';
+    } else if (desc.includes('kapalı') || icon.startsWith('04')) {
+        cond = 'clouds';
+    } else if (desc.includes('bulut') || desc.includes('parçalı') || icon.startsWith('02') || icon.startsWith('03')) {
+        cond = 'few-clouds';
+    }
+
+    let theme, sun = false, moon = false, clouds = false;
+    switch (cond) {
+        case 'clear':       theme = isNight ? 'wc-theme-clear-night' : 'wc-theme-clear-day'; if (isNight) moon = true; else sun = true; break;
+        case 'few-clouds':  theme = isNight ? 'wc-theme-few-clouds-night' : 'wc-theme-few-clouds-day'; clouds = true; if (isNight) moon = true; else sun = true; break;
+        case 'clouds':      theme = 'wc-theme-clouds'; clouds = true; break;
+        case 'rain':        theme = 'wc-theme-rain'; clouds = true; break;
+        case 'thunderstorm':theme = 'wc-theme-thunderstorm'; clouds = true; break;
+        case 'snow':        theme = 'wc-theme-snow'; clouds = true; break;
+        case 'mist':        theme = 'wc-theme-mist'; clouds = true; break;
+        default:            theme = 'wc-theme-clear-day'; sun = true;
+    }
+    return { cond, isNight, wind, humidity, rain, theme, sun, moon, clouds };
+}
+
 function renderWeatherCard(hava) {
-    const dateStr = new Date().toLocaleDateString('tr-TR', {
-        day: 'numeric', month: 'long', year: 'numeric'
-    });
+    const dateStr = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const w = _parseWeather(hava);
+
+    let bgHTML = '';
+
+    // Sun or Moon
+    if (w.sun) {
+        bgHTML += `<div class="wc-sun-container"><div class="wc-sun-glow"></div><div class="wc-sun-rays"></div><div class="wc-sun-core"></div></div>`;
+    }
+    if (w.moon) {
+        bgHTML += `<div class="wc-moon-container"><div class="wc-moon-core"></div></div>`;
+    }
+
+    // Clouds
+    if (w.clouds) {
+        bgHTML += `<div class="wc-clouds-container"><div class="wc-cloud wc-cloud-1"></div><div class="wc-cloud wc-cloud-2"></div><div class="wc-cloud wc-cloud-3"></div></div>`;
+    }
 
     document.getElementById('weather-card-container').innerHTML = `
-        <div class="weather-card">
-            <div class="wc-header">${hava.emoji} ${hava.sehir} — ${hava.aciklama}</div>
-            <div class="wc-temp">${hava.sicaklik}°C</div>
-            <div class="wc-details">
-                <span>🌡️ Hissedilen: ${hava.hissedilen}°C</span>
-                <span>💧 Nem: ${hava.nem}%</span>
-                <span>💨 Rüzgar: ${hava.ruzgar} km/h</span>
-                <span>📅 ${dateStr}</span>
+        <div class="weather-card ${w.theme}">
+            ${bgHTML}
+            <canvas id="wc-canvas" class="wc-canvas"></canvas>
+            <div class="wc-content">
+                <div class="wc-header">${hava.emoji} ${hava.sehir} — ${hava.aciklama}</div>
+                <div class="wc-temp">${hava.sicaklik}°C</div>
+                <div class="wc-details">
+                    <span>🌡️ Hissedilen: ${hava.hissedilen}°C</span>
+                    <span>💧 Nem: ${hava.nem}%</span>
+                    <span>💨 Rüzgar: ${hava.ruzgar} km/h</span>
+                    <span>📅 ${dateStr}</span>
+                </div>
             </div>
         </div>
     `;
+
+    _initWeatherCanvas(w);
+}
+
+function _initWeatherCanvas(w) {
+    if (_wcAnimId) { cancelAnimationFrame(_wcAnimId); _wcAnimId = null; }
+    if (_wcResizeObs) { _wcResizeObs.disconnect(); _wcResizeObs = null; }
+
+    const canvas = document.getElementById('wc-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const card = canvas.closest('.weather-card');
+    if (!card) return;
+
+    function resize() {
+        const r = card.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) { canvas.width = r.width; canvas.height = r.height; }
+    }
+    resize();
+    _wcResizeObs = new ResizeObserver(resize);
+    _wcResizeObs.observe(card);
+
+    const { cond, wind, rain } = w;
+    const drops = [], splashes = [], streaks = [], flakes = [], motes = [];
+
+    // Rain
+    if (cond === 'rain' || cond === 'thunderstorm') {
+        const n = rain === 'light' ? 30 : rain === 'heavy' ? 130 : 65;
+        const sm = rain === 'light' ? 0.8 : rain === 'heavy' ? 1.35 : 1;
+        for (let i = 0; i < n; i++) drops.push({
+            x: Math.random() * (canvas.width + 160) - 80, y: Math.random() * canvas.height,
+            len: (14 + Math.random() * 16) * sm, speed: (14 + Math.random() * 8) * sm,
+            op: 0.35 + Math.random() * 0.45, w: rain === 'heavy' ? 1.5 + Math.random() * 0.8 : 1.1 + Math.random() * 0.5
+        });
+    }
+
+    // Wind streaks (>= 14 km/h)
+    if (wind >= 14) {
+        const n = wind >= 38 ? 7 : wind >= 25 ? 5 : 3;
+        for (let i = 0; i < n; i++) streaks.push({
+            x: Math.random() * canvas.width, y: 15 + Math.random() * (canvas.height - 30),
+            len: 90 + Math.random() * 130, speed: 3.5 + (wind / 10) * 1.8 + Math.random() * 2,
+            op: 0.28 + Math.random() * 0.4, seed: Math.random() * 100, thick: 1.2 + Math.random() * 1.3
+        });
+    }
+
+    // Snow
+    if (cond === 'snow') for (let i = 0; i < 55; i++) flakes.push({
+        x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+        r: 1.5 + Math.random() * 2.5, speed: 0.8 + Math.random() * 1.6,
+        wb: Math.random() * Math.PI * 2, ws: 0.02 + Math.random() * 0.03, op: 0.4 + Math.random() * 0.5
+    });
+
+    // Sun motes
+    if ((cond === 'clear' || cond === 'few-clouds') && !w.isNight) for (let i = 0; i < 16; i++) motes.push({
+        x: canvas.width * 0.4 + Math.random() * canvas.width * 0.6, y: Math.random() * canvas.height,
+        r: 1.2 + Math.random() * 2.2, sy: 0.25 + Math.random() * 0.45, op: 0.25 + Math.random() * 0.5, p: Math.random() * Math.PI * 2
+    });
+
+    let lFlash = 0, lNext = 140 + Math.random() * 200, lFrame = 0;
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const drift = Math.max(-0.55, Math.min(0.75, (wind - 5) / 45));
+
+        // Lightning
+        if (cond === 'thunderstorm') {
+            lFrame++;
+            if (lFrame >= lNext) { lFlash = 0.5; lNext = lFrame + 180 + Math.random() * 260; }
+            if (lFlash > 0) { ctx.fillStyle = `rgba(255,255,255,${lFlash})`; ctx.fillRect(0, 0, canvas.width, canvas.height); lFlash -= 0.06; }
+        }
+
+        // Rain
+        for (const d of drops) {
+            const vx = drift * d.speed, vy = d.speed;
+            ctx.strokeStyle = `rgba(186,230,253,${d.op})`; ctx.lineWidth = d.w;
+            ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(d.x - vx * 0.6, d.y - vy * 0.6); ctx.stroke();
+            d.x += vx; d.y += vy;
+            if (d.y >= canvas.height) {
+                if (rain !== 'light' && splashes.length < 35) splashes.push({ x: d.x, y: canvas.height - 2, vx: (Math.random() - 0.5) * 3, vy: -(1.5 + Math.random() * 2), life: 1 });
+                d.y = -20; d.x = Math.random() * (canvas.width + 160) - 80;
+            }
+        }
+        for (let i = splashes.length - 1; i >= 0; i--) {
+            const s = splashes[i];
+            ctx.fillStyle = `rgba(186,230,253,${s.life * 0.6})`; ctx.beginPath(); ctx.arc(s.x, s.y, 1, 0, Math.PI * 2); ctx.fill();
+            s.x += s.vx; s.y += s.vy; s.vy += 0.22; s.life -= 0.08;
+            if (s.life <= 0) splashes.splice(i, 1);
+        }
+
+        // Wind streaks
+        for (const st of streaks) {
+            st.x += st.speed;
+            if (st.x - st.len > canvas.width) { st.x = -st.len - Math.random() * 70; st.y = 15 + Math.random() * (canvas.height - 30); }
+            const g = ctx.createLinearGradient(st.x - st.len, st.y, st.x, st.y);
+            g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.65, `rgba(255,255,255,${st.op * 0.5})`); g.addColorStop(1, `rgba(255,255,255,${st.op})`);
+            ctx.strokeStyle = g; ctx.lineWidth = st.thick; ctx.beginPath();
+            const sx = st.x - st.len;
+            ctx.moveTo(sx, st.y + Math.sin(sx * 0.025 + st.seed) * 5);
+            for (let px = sx; px <= st.x; px += 10) ctx.lineTo(px, st.y + Math.sin(px * 0.025 + st.seed) * 5);
+            ctx.stroke();
+        }
+
+        // Snow
+        for (const f of flakes) {
+            f.wb += f.ws; f.x += Math.sin(f.wb) * 0.8 + (wind / 35); f.y += f.speed;
+            if (f.y > canvas.height + 10) { f.y = -10; f.x = Math.random() * canvas.width; }
+            if (f.x > canvas.width + 10) f.x = -10; if (f.x < -10) f.x = canvas.width + 10;
+            ctx.fillStyle = `rgba(255,255,255,${f.op})`; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Sun motes
+        for (const m of motes) {
+            m.p += 0.04; m.x += Math.cos(m.p) * 0.3; m.y -= m.sy;
+            if (m.y < -10) { m.y = canvas.height + 10; m.x = canvas.width * 0.3 + Math.random() * canvas.width * 0.7; }
+            const o = m.op * (0.6 + 0.4 * Math.sin(m.p));
+            ctx.fillStyle = `rgba(254,240,138,${o})`; ctx.shadowColor = 'rgba(251,191,36,0.5)'; ctx.shadowBlur = 5;
+            ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+        }
+
+        _wcAnimId = requestAnimationFrame(animate);
+    }
+    _wcAnimId = requestAnimationFrame(animate);
 }
 
 function renderMiniWeatherCard(hava) {
