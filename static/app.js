@@ -372,18 +372,18 @@ function _parseWeather(hava) {
         cond = 'few-clouds';
     }
 
-    let theme, sun = false, moon = false, clouds = false;
+    let theme, sun = false, moon = false, cloudCount = 0;
     switch (cond) {
         case 'clear':       theme = isNight ? 'wc-theme-clear-night' : 'wc-theme-clear-day'; if (isNight) moon = true; else sun = true; break;
-        case 'few-clouds':  theme = isNight ? 'wc-theme-few-clouds-night' : 'wc-theme-few-clouds-day'; clouds = true; if (isNight) moon = true; else sun = true; break;
-        case 'clouds':      theme = 'wc-theme-clouds'; clouds = true; break;
-        case 'rain':        theme = 'wc-theme-rain'; clouds = true; break;
-        case 'thunderstorm':theme = 'wc-theme-thunderstorm'; clouds = true; break;
-        case 'snow':        theme = 'wc-theme-snow'; clouds = true; break;
-        case 'mist':        theme = 'wc-theme-mist'; clouds = true; break;
+        case 'few-clouds':  theme = isNight ? 'wc-theme-few-clouds-night' : 'wc-theme-few-clouds-day'; cloudCount = 2; if (isNight) moon = true; else sun = true; break;
+        case 'clouds':      theme = 'wc-theme-clouds'; cloudCount = 4; if (isNight) moon = true; else sun = true; break;
+        case 'rain':        theme = 'wc-theme-rain'; cloudCount = 5; break;
+        case 'thunderstorm':theme = 'wc-theme-thunderstorm'; cloudCount = 5; break;
+        case 'snow':        theme = 'wc-theme-snow'; cloudCount = 4; break;
+        case 'mist':        theme = 'wc-theme-mist'; cloudCount = 2; if (isNight) moon = true; else sun = true; break;
         default:            theme = 'wc-theme-clear-day'; sun = true;
     }
-    return { cond, isNight, wind, humidity, rain, theme, sun, moon, clouds };
+    return { cond, isNight, wind, humidity, rain, theme, sun, moon, cloudCount };
 }
 
 function renderWeatherCard(hava) {
@@ -401,8 +401,19 @@ function renderWeatherCard(hava) {
     }
 
     // Clouds
-    if (w.clouds) {
-        bgHTML += `<div class="wc-clouds-container"><div class="wc-cloud wc-cloud-1"></div><div class="wc-cloud wc-cloud-2"></div><div class="wc-cloud wc-cloud-3"></div></div>`;
+    if (w.cloudCount > 0) {
+        // Rüzgara göre bulut animasyon hızı çarpanı (az rüzgar = yavaş = büyük çarpan)
+        // 10 km/h standart hız kabul ediyoruz
+        const windFactor = Math.max(0.4, Math.min(3.5, 12 / (w.wind || 10)));
+        let cloudsHTML = '';
+        const baseDurs = [50, 35, 24, 40, 60];
+        for (let i = 1; i <= w.cloudCount; i++) {
+            // we have up to 5 classes: wc-cloud-1, ..., wc-cloud-5
+            const cls = ((i - 1) % 5) + 1;
+            const dur = (baseDurs[cls - 1] * windFactor).toFixed(1);
+            cloudsHTML += `<div class="wc-cloud wc-cloud-${cls}" style="animation-duration: ${dur}s;"></div>`;
+        }
+        bgHTML += `<div class="wc-clouds-container">${cloudsHTML}</div>`;
     }
 
     document.getElementById('weather-card-container').innerHTML = `
@@ -443,7 +454,7 @@ function _initWeatherCanvas(w) {
     _wcResizeObs = new ResizeObserver(resize);
     _wcResizeObs.observe(card);
 
-    const { cond, wind, rain } = w;
+    const { cond, wind, rain, humidity } = w;
     const drops = [], splashes = [], streaks = [], flakes = [], motes = [];
 
     // Rain

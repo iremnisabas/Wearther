@@ -104,6 +104,10 @@ def hava_durumu_emoji(aciklama: str) -> str:
     aciklama_lower = aciklama.lower()
     if "güneş" in aciklama_lower or "açık" in aciklama_lower:
         return "☀️"
+    elif "kapalı" in aciklama_lower or "çok bulutlu" in aciklama_lower:
+        return "☁️"
+    elif "az bulut" in aciklama_lower:
+        return "🌤️"
     elif "bulut" in aciklama_lower or "parçalı" in aciklama_lower:
         return "⛅"
     elif "yağmur" in aciklama_lower:

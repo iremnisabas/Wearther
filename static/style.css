@@ -423,34 +423,42 @@ body.sidebar-closed .sidebar-toggle {
     background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 50%, #f59e0b 100%);
     box-shadow: 0 10px 40px rgba(245, 158, 11, 0.25);
 }
+
 .weather-card.wc-theme-clear-night {
     background: linear-gradient(135deg, #0a0a1a 0%, #1e1b4b 55%, #312e81 100%);
     box-shadow: 0 10px 40px rgba(49, 46, 129, 0.4);
 }
+
 .weather-card.wc-theme-few-clouds-day {
     background: linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%);
     box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
 }
+
 .weather-card.wc-theme-few-clouds-night {
     background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 55%, #3b0764 100%);
     box-shadow: 0 10px 40px rgba(59, 7, 100, 0.35);
 }
+
 .weather-card.wc-theme-clouds {
     background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
     box-shadow: 0 10px 40px rgba(51, 65, 85, 0.35);
 }
+
 .weather-card.wc-theme-rain {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a5f 100%);
     box-shadow: 0 10px 40px rgba(30, 58, 95, 0.35);
 }
+
 .weather-card.wc-theme-thunderstorm {
     background: linear-gradient(135deg, #080c14 0%, #181528 50%, #2b1238 100%);
     box-shadow: 0 10px 40px rgba(43, 18, 56, 0.45);
 }
+
 .weather-card.wc-theme-snow {
     background: linear-gradient(135deg, #1e293b 0%, #334e68 50%, #627d98 100%);
     box-shadow: 0 10px 40px rgba(98, 125, 152, 0.35);
 }
+
 .weather-card.wc-theme-mist {
     background: linear-gradient(135deg, #1e293b 0%, #374151 50%, #4b5563 100%);
     box-shadow: 0 10px 40px rgba(75, 85, 99, 0.3);
@@ -466,46 +474,61 @@ body.sidebar-closed .sidebar-toggle {
     pointer-events: none;
     z-index: 2;
 }
+
 .wc-sun-glow {
     position: absolute;
     inset: -20px;
-    background: radial-gradient(circle, rgba(251,191,36,0.3) 0%, rgba(245,158,11,0.1) 50%, transparent 75%);
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.3) 0%, rgba(245, 158, 11, 0.1) 50%, transparent 75%);
     border-radius: 50%;
     animation: wcSunPulse 5s ease-in-out infinite alternate;
 }
+
 .wc-sun-core {
     position: absolute;
     inset: 22px;
     background: radial-gradient(circle, #fef08a 0%, #f59e0b 80%, #d97706 100%);
     border-radius: 50%;
-    box-shadow: 0 0 40px rgba(251,191,36,0.7), 0 0 80px rgba(245,158,11,0.3);
+    box-shadow: 0 0 40px rgba(251, 191, 36, 0.7), 0 0 80px rgba(245, 158, 11, 0.3);
 }
+
 .wc-sun-rays {
     position: absolute;
     inset: -35px;
-    background: conic-gradient(
-        from 0deg,
-        transparent 0deg 22deg, rgba(254,240,138,0.1) 25deg 33deg,
-        transparent 38deg 62deg, rgba(254,240,138,0.1) 65deg 73deg,
-        transparent 78deg 102deg, rgba(254,240,138,0.1) 105deg 113deg,
-        transparent 118deg 142deg, rgba(254,240,138,0.1) 145deg 153deg,
-        transparent 158deg 182deg, rgba(254,240,138,0.1) 185deg 193deg,
-        transparent 198deg 222deg, rgba(254,240,138,0.1) 225deg 233deg,
-        transparent 238deg 262deg, rgba(254,240,138,0.1) 265deg 273deg,
-        transparent 278deg 302deg, rgba(254,240,138,0.1) 305deg 313deg,
-        transparent 318deg 342deg, rgba(254,240,138,0.1) 345deg 353deg,
-        transparent 358deg
-    );
+    background: conic-gradient(from 0deg,
+            transparent 0deg 22deg, rgba(254, 240, 138, 0.1) 25deg 33deg,
+            transparent 38deg 62deg, rgba(254, 240, 138, 0.1) 65deg 73deg,
+            transparent 78deg 102deg, rgba(254, 240, 138, 0.1) 105deg 113deg,
+            transparent 118deg 142deg, rgba(254, 240, 138, 0.1) 145deg 153deg,
+            transparent 158deg 182deg, rgba(254, 240, 138, 0.1) 185deg 193deg,
+            transparent 198deg 222deg, rgba(254, 240, 138, 0.1) 225deg 233deg,
+            transparent 238deg 262deg, rgba(254, 240, 138, 0.1) 265deg 273deg,
+            transparent 278deg 302deg, rgba(254, 240, 138, 0.1) 305deg 313deg,
+            transparent 318deg 342deg, rgba(254, 240, 138, 0.1) 345deg 353deg,
+            transparent 358deg);
     border-radius: 50%;
     animation: wcSunRotate 45s linear infinite;
 }
+
 @keyframes wcSunPulse {
-    0% { transform: scale(0.96); opacity: 0.7; }
-    100% { transform: scale(1.1); opacity: 1; }
+    0% {
+        transform: scale(0.96);
+        opacity: 0.7;
+    }
+
+    100% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
 }
+
 @keyframes wcSunRotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* ── Celestial Moon ── */
@@ -518,21 +541,25 @@ body.sidebar-closed .sidebar-toggle {
     pointer-events: none;
     z-index: 2;
 }
+
 .wc-moon-core {
     width: 55px;
     height: 55px;
     border-radius: 50%;
     background: radial-gradient(circle at 35% 35%, #fff 0%, #cbd5e1 70%, #94a3b8 100%);
-    box-shadow: 0 0 30px rgba(226,232,240,0.6), 0 0 70px rgba(148,163,184,0.3);
+    box-shadow: 0 0 30px rgba(226, 232, 240, 0.6), 0 0 70px rgba(148, 163, 184, 0.3);
     position: relative;
 }
+
 .wc-moon-core::after {
     content: '';
     position: absolute;
-    width: 12px; height: 12px;
-    top: 16px; left: 12px;
+    width: 12px;
+    height: 12px;
+    top: 16px;
+    left: 12px;
     border-radius: 50%;
-    background: rgba(148,163,184,0.22);
+    background: rgba(148, 163, 184, 0.22);
 }
 
 /* ── Floating CSS Clouds ── */
@@ -543,58 +570,168 @@ body.sidebar-closed .sidebar-toggle {
     z-index: 3;
     overflow: hidden;
 }
+
 .wc-cloud {
     position: absolute;
-    background: rgba(255,255,255,0.16);
+    background: rgba(255, 255, 255, 0.16);
     border-radius: 100px;
     filter: blur(3px);
     will-change: transform;
 }
-.wc-cloud::before, .wc-cloud::after {
+
+.wc-cloud::before,
+.wc-cloud::after {
     content: '';
     position: absolute;
     background: inherit;
     border-radius: 50%;
 }
+
 .wc-cloud-1 {
-    top: 6px; width: 200px; height: 50px; opacity: 0.2;
+    top: 6px;
+    width: 200px;
+    height: 50px;
+    opacity: 0.2;
     animation: wcCloudDrift1 50s linear infinite;
 }
-.wc-cloud-1::before { width: 80px; height: 80px; top: -38px; left: 30px; }
-.wc-cloud-1::after  { width: 60px; height: 60px; top: -26px; left: 95px; }
+
+.wc-cloud-1::before {
+    width: 80px;
+    height: 80px;
+    top: -38px;
+    left: 30px;
+}
+
+.wc-cloud-1::after {
+    width: 60px;
+    height: 60px;
+    top: -26px;
+    left: 95px;
+}
 
 .wc-cloud-2 {
-    top: 30px; width: 240px; height: 60px; opacity: 0.3;
+    top: 30px;
+    width: 240px;
+    height: 60px;
+    opacity: 0.3;
     animation: wcCloudDrift2 35s linear infinite;
 }
-.wc-cloud-2::before { width: 95px; height: 95px; top: -45px; left: 40px; }
-.wc-cloud-2::after  { width: 75px; height: 75px; top: -32px; left: 115px; }
+
+.wc-cloud-2::before {
+    width: 95px;
+    height: 95px;
+    top: -45px;
+    left: 40px;
+}
+
+.wc-cloud-2::after {
+    width: 75px;
+    height: 75px;
+    top: -32px;
+    left: 115px;
+}
 
 .wc-cloud-3 {
-    top: 65px; width: 180px; height: 45px; opacity: 0.38;
+    top: 65px;
+    width: 180px;
+    height: 45px;
+    opacity: 0.38;
     animation: wcCloudDrift3 24s linear infinite;
 }
-.wc-cloud-3::before { width: 70px; height: 70px; top: -32px; left: 28px; }
-.wc-cloud-3::after  { width: 55px; height: 55px; top: -22px; left: 88px; }
+
+.wc-cloud-3::before {
+    width: 70px;
+    height: 70px;
+    top: -32px;
+    left: 28px;
+}
+
+.wc-cloud-3::after {
+    width: 55px;
+    height: 55px;
+    top: -22px;
+    left: 88px;
+}
+
+.wc-cloud-4 {
+    top: 15px;
+    width: 220px;
+    height: 55px;
+    opacity: 0.45;
+    animation: wcCloudDrift1 40s linear infinite;
+}
+
+.wc-cloud-4::before {
+    width: 85px;
+    height: 85px;
+    top: -40px;
+    left: 35px;
+}
+
+.wc-cloud-4::after {
+    width: 65px;
+    height: 65px;
+    top: -30px;
+    left: 105px;
+}
+
+.wc-cloud-5 {
+    top: 50px;
+    width: 260px;
+    height: 70px;
+    opacity: 0.25;
+    animation: wcCloudDrift2 60s linear infinite;
+}
+
+.wc-cloud-5::before {
+    width: 100px;
+    height: 100px;
+    top: -50px;
+    left: 45px;
+}
+
+.wc-cloud-5::after {
+    width: 80px;
+    height: 80px;
+    top: -35px;
+    left: 125px;
+}
 
 /* Dark clouds for rain/storm */
 .weather-card.wc-theme-rain .wc-cloud,
 .weather-card.wc-theme-thunderstorm .wc-cloud {
-    background: rgba(15,23,42,0.4);
+    background: rgba(15, 23, 42, 0.4);
     filter: blur(4px);
 }
 
 @keyframes wcCloudDrift1 {
-    0%   { transform: translateX(-240px); }
-    100% { transform: translateX(1100px); }
+    0% {
+        transform: translateX(-240px);
+    }
+
+    100% {
+        transform: translateX(1100px);
+    }
 }
+
 @keyframes wcCloudDrift2 {
-    0%   { transform: translateX(-280px); }
-    100% { transform: translateX(1100px); }
+    0% {
+        transform: translateX(-280px);
+    }
+
+    100% {
+        transform: translateX(1100px);
+    }
 }
+
 @keyframes wcCloudDrift3 {
-    0%   { transform: translateX(-220px); }
-    100% { transform: translateX(1100px); }
+    0% {
+        transform: translateX(-220px);
+    }
+
+    100% {
+        transform: translateX(1100px);
+    }
 }
 
 /* ── Canvas for rain/snow/wind/lightning particles ── */
@@ -1461,6 +1598,14 @@ body.sidebar-closed .sidebar-toggle {
 
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .weather-card::before {
+        width: 140px;
+        height: 140px;
+        top: -15px;
+        right: -15px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
     }
 
     .weather-card .wc-temp {
