@@ -15,6 +15,35 @@ load_dotenv()
 # OpenWeatherMap API anahtarı artık .env'den alınıyor
 DEFAULT_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
+SEHIR_DUZELTMELERI = {
+    "Istanbul": "İstanbul",
+    "Uskudar": "Üsküdar",
+    "Izmir": "İzmir",
+    "Canakkale": "Çanakkale",
+    "Mugla": "Muğla",
+    "Eskisehir": "Eskişehir",
+    "Sanliurfa": "Şanlıurfa",
+    "Diyarbakir": "Diyarbakır",
+    "Nigde": "Niğde",
+    "Tekirdag": "Tekirdağ",
+    "Kirsehir": "Kırşehir",
+    "Kirikkale": "Kırıkkale",
+    "Balikesir": "Balıkesir",
+    "Gumushane": "Gümüşhane",
+    "Sirnak": "Şırnak",
+    "Usak": "Uşak",
+    "Igdir": "Iğdır",
+    "Agri": "Ağrı",
+    "Bingol": "Bingöl",
+    "Elazig": "Elazığ",
+    "Kutahya": "Kütahya",
+    "Cankiri": "Çankırı",
+    "Corum": "Çorum",
+    "Karabuk": "Karabük",
+    "Aydin": "Aydın",
+    "Kirklareli": "Kırklareli"
+}
+
 def hava_durumunu_getir(sehir: str, api_key: str = None) -> dict | None:
     """
     Verilen şehir için anlık hava durumunu OpenWeatherMap API'den çeker.
@@ -42,9 +71,12 @@ def hava_durumunu_getir(sehir: str, api_key: str = None) -> dict | None:
         response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
         data = response.json()
+        
+        ham_sehir = data["name"]
+        duzeltilmis_sehir = SEHIR_DUZELTMELERI.get(ham_sehir, ham_sehir)
 
         return {
-            "sehir": data["name"],
+            "sehir": duzeltilmis_sehir,
             "sicaklik": round(data["main"]["temp"], 1),
             "hissedilen": round(data["main"]["feels_like"], 1),
             "nem": data["main"]["humidity"],

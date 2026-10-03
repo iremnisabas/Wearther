@@ -4,7 +4,8 @@
 
 // ─── State ───
 let currentWeather = null;
-let currentCity = 'Istanbul';
+let currentCity = localStorage.getItem('lastCity') || 'Istanbul';
+let pinnedCities = JSON.parse(localStorage.getItem('pinnedCities') || '[]');
 
 const FEEDBACK_MAP = {
     '-1': '🥶 Üşüdüm',
@@ -17,9 +18,11 @@ const FEEDBACK_MAP = {
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
+    document.getElementById('sehir-input').value = currentCity;
     setupTabs();
     setupSidebar();
     setupCitySearch();
+    renderPinnedCities();
     setupForm();
     await loadOptions();
     await refreshData();
@@ -122,7 +125,55 @@ function setupCitySearch() {
             }
         }
     });
+
+    const pinBtn = document.getElementById('pin-btn');
+    if (pinBtn) {
+        pinBtn.addEventListener('click', () => {
+            const city = currentCity;
+            if (!pinnedCities.includes(city)) {
+                if (pinnedCities.length >= 3) {
+                    showToast('En fazla 3 şehir sabitleyebilirsiniz.', 'error');
+                    return;
+                }
+                pinnedCities.push(city);
+                localStorage.setItem('pinnedCities', JSON.stringify(pinnedCities));
+                renderPinnedCities();
+                showToast(city + ' sabitlendi 📌', 'success');
+            } else {
+                showToast('Bu şehir zaten sabitli.', 'error');
+            }
+        });
+    }
 }
+
+function renderPinnedCities() {
+    const container = document.getElementById('pinned-cities');
+    if (!container) return;
+    
+    if (pinnedCities.length === 0) {
+        container.innerHTML = '<div style="font-size:13px; color:rgba(255,255,255,0.4); font-style:italic; padding: 4px 0;">Henüz sabitlenmiş bir şehir yok.</div>';
+        return;
+    }
+    
+    container.innerHTML = pinnedCities.map(city => `
+        <div class="pinned-city-item">
+            <span class="pinned-city-name" onclick="loadPinnedCity('${city}')">${city}</span>
+            <button class="pinned-city-remove" onclick="removePinnedCity('${city}')" title="Kaldır"><i class="fas fa-xmark"></i></button>
+        </div>
+    `).join('');
+}
+
+window.loadPinnedCity = function(city) {
+    document.getElementById('sehir-input').value = city;
+    currentCity = city;
+    refreshData();
+};
+
+window.removePinnedCity = function(city) {
+    pinnedCities = pinnedCities.filter(c => c !== city);
+    localStorage.setItem('pinnedCities', JSON.stringify(pinnedCities));
+    renderPinnedCities();
+};
 
 
 // ═══════════════════════════════════════════
@@ -141,6 +192,10 @@ async function refreshData(showLoadingScreen = true) {
         if (!res.ok) throw new Error('API hatası');
         const data = await res.json();
         if (data.error) throw new Error(data.error);
+
+        currentCity = data.hava.sehir;
+        document.getElementById('sehir-input').value = currentCity;
+        localStorage.setItem('lastCity', currentCity);
 
         currentWeather = data.hava;
         renderWeatherCard(data.hava);
@@ -264,13 +319,13 @@ async function loadHistory() {
         // Actions
         html += `
             <div class="actions-row">
-                <a href="/api/indir" class="btn-secondary" download>📥 Verileri CSV Olarak İndir</a>
+                <a href="/api/indir" class="btn-secondary" download><i class="fas fa-file-csv"></i> Verileri CSV Olarak İndir</a>
             </div>
             <details class="delete-section">
-                <summary>🗑️ Son Kaydı Sil</summary>
+                <summary><i class="fas fa-trash-can"></i> Son Kaydı Sil</summary>
                 <div class="delete-content">
                     <p class="warning-text">⚠️ Bu işlem geri alınamaz!</p>
-                    <button class="btn-danger" onclick="deleteLastRecord()">Son kaydı sil</button>
+                    <button class="btn-danger" onclick="deleteLastRecord()"><i class="fas fa-trash-can"></i> Son kaydı sil</button>
                 </div>
             </details>
         `;
@@ -358,7 +413,7 @@ function renderRecommendations(oneri, hava) {
         `;
     }
 
-    let html = '<h3 class="rec-section-title">🤖 Yapay Zeka Önerisi</h3>';
+    let html = '<h3 class="rec-section-title"><i class="fas fa-robot" style="color: #a78bfa;"></i> Yapay Zeka Önerisi</h3>';
     html += '<div class="rec-grid">';
     html += recCard('👕', 'Üst Giyim', oneri.ust_giyim, 0.05);
     html += recCard('👖', 'Alt Giyim', oneri.alt_giyim, 0.1);
@@ -382,7 +437,7 @@ function renderRecommendations(oneri, hava) {
 
     // Similar days
     if (oneri.benzer_gunler && oneri.benzer_gunler.length > 0) {
-        let simHtml = '<h3 class="similar-section-title">📅 Bu Havaya En Benzer Geçmiş Günler</h3>';
+        let simHtml = '<h3 class="similar-section-title"><i class="fas fa-calendar-days" style="color: #60a5fa;"></i> Bu Havaya En Benzer Geçmiş Günler</h3>';
         oneri.benzer_gunler.slice(0, 3).forEach((gun, i) => {
             simHtml += `
                 <div class="similar-day" style="animation-delay:${0.05 * (i + 1)}s">
@@ -422,7 +477,7 @@ function renderSidebarStats(stats) {
     }
 
     container.innerHTML = `
-        <h3 class="section-title">📊 Özet</h3>
+        <h3 class="section-title"><i class="fas fa-chart-bar"></i> Özet</h3>
         <div class="sidebar-stat">
             <span>Toplam Kayıt</span>
             <span class="stat-value">${stats.toplam}</span>
@@ -503,7 +558,7 @@ function setupForm() {
 
         const btn = document.getElementById('btn-kaydet');
         btn.disabled = true;
-        btn.textContent = '⏳ Kaydediliyor...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
 
         const gbRadio = document.querySelector('input[name="geri-bildirim"]:checked');
         const geri_bildirim = gbRadio ? parseInt(gbRadio.value) : 0;
@@ -552,7 +607,7 @@ function setupForm() {
             showToast('❌ Sunucu bağlantı hatası.', 'error');
         } finally {
             btn.disabled = false;
-            btn.textContent = '💾 Sisteme Kaydet ve Öğret';
+            btn.innerHTML = '<i class="fas fa-floppy-disk"></i> Sisteme Kaydet ve Öğret';
         }
     });
 }
