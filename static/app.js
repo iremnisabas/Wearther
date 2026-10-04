@@ -234,7 +234,7 @@ async function refreshData(showLoadingScreen = true) {
     }
 
     try {
-        const res = await fetch('/api/oneri?sehir=' + encodeURIComponent(currentCity));
+        const res = await fetch('api/oneri?sehir=' + encodeURIComponent(currentCity));
         if (!res.ok) throw new Error('API hatası');
         const data = await res.json();
         if (data.error) throw new Error(data.error);
@@ -268,7 +268,7 @@ async function refreshData(showLoadingScreen = true) {
 
 async function loadStats() {
     try {
-        const res = await fetch('/api/istatistikler');
+        const res = await fetch('api/istatistikler');
         const stats = await res.json();
         renderSidebarStats(stats);
     } catch (err) {
@@ -282,8 +282,8 @@ async function loadHistory() {
 
     try {
         const [histRes, statsRes] = await Promise.all([
-            fetch('/api/gecmis'),
-            fetch('/api/istatistikler')
+            fetch('api/gecmis'),
+            fetch('api/istatistikler')
         ]);
         const history = await histRes.json();
         const stats = await statsRes.json();
@@ -365,7 +365,7 @@ async function loadHistory() {
         // Actions
         html += `
             <div class="actions-row">
-                <a href="/api/indir" class="btn-secondary" download><i class="fas fa-file-csv"></i> Verileri CSV Olarak İndir</a>
+                <a href="api/indir" class="btn-secondary" download><i class="fas fa-file-csv"></i> Verileri CSV Olarak İndir</a>
             </div>
             <details class="delete-section">
                 <summary><i class="fas fa-trash-can"></i> Son Kaydı Sil</summary>
@@ -795,7 +795,7 @@ function renderSidebarStats(stats) {
 
 async function loadOptions() {
     try {
-        const res = await fetch('/api/secenekler');
+        const res = await fetch('api/secenekler');
         const opts = await res.json();
 
         populateSelect('select-ust', opts.ust_giyim);
@@ -869,7 +869,7 @@ function setupForm() {
         };
 
         try {
-            const res = await fetch('/api/kaydet', {
+            const res = await fetch('api/kaydet', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
@@ -912,7 +912,7 @@ async function deleteLastRecord() {
     if (!confirm('Son kaydı silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) return;
 
     try {
-        const res = await fetch('/api/son-kayit-sil', { method: 'DELETE' });
+        const res = await fetch('api/son-kayit-sil', { method: 'DELETE' });
         const result = await res.json();
 
         if (result.basarili) {

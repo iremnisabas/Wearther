@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  wearther:
+    build: .
+    container_name: wearther-backend
+    restart: always
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - ./kiyafet_verileri.csv:/app/kiyafet_verileri.csv
+      - ./static:/app/static
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
