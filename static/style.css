@@ -68,10 +68,10 @@ html {
 body {
     font-family: var(--font);
     background: radial-gradient(circle at 10% 15%, rgba(221, 201, 252, 0.6) 0%, transparent 45%),
-                radial-gradient(circle at 85% 10%, rgba(206, 185, 253, 0.5) 0%, transparent 40%),
-                radial-gradient(circle at 80% 85%, rgba(240, 219, 255, 0.55) 0%, transparent 45%),
-                radial-gradient(circle at 15% 90%, rgba(198, 182, 254, 0.45) 0%, transparent 45%),
-                #f7f3fb;
+        radial-gradient(circle at 85% 10%, rgba(206, 185, 253, 0.5) 0%, transparent 40%),
+        radial-gradient(circle at 80% 85%, rgba(240, 219, 255, 0.55) 0%, transparent 45%),
+        radial-gradient(circle at 15% 90%, rgba(198, 182, 254, 0.45) 0%, transparent 45%),
+        #f7f3fb;
     background-attachment: fixed;
     color: var(--text-primary);
     min-height: 100vh;
@@ -1491,11 +1491,9 @@ body.sidebar-closed .sidebar-toggle {
 
 .data-table-container {
     overflow-x: auto;
-    overflow-y: auto;
-    margin-bottom: 20px;
+    margin-bottom: 14px;
     border-radius: var(--radius-md);
     border: 1px solid var(--border-subtle);
-    max-height: 460px;
     background: rgba(255, 255, 255, 0.78);
     backdrop-filter: blur(16px);
     box-shadow: var(--shadow-card);
@@ -1514,7 +1512,7 @@ body.sidebar-closed .sidebar-toggle {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     padding: 14px 8px;
-    text-align: left;
+    text-align: center;
     font-size: 11px;
     white-space: nowrap;
     position: sticky;
@@ -1540,6 +1538,7 @@ body.sidebar-closed .sidebar-toggle {
 
 .data-table tbody td {
     padding: 13px 8px;
+    text-align: center;
     white-space: nowrap;
     color: var(--text-primary);
     font-weight: 500;
@@ -1593,6 +1592,7 @@ body.sidebar-closed .sidebar-toggle {
     border-color: rgba(59, 130, 246, 0.28);
     color: #1d4ed8;
 }
+
 .feedback-badge-btn.fb-cold:hover {
     background: rgba(59, 130, 246, 0.2);
     border-color: #3b82f6;
@@ -1603,6 +1603,7 @@ body.sidebar-closed .sidebar-toggle {
     border-color: rgba(16, 185, 129, 0.28);
     color: #047857;
 }
+
 .feedback-badge-btn.fb-perfect:hover {
     background: rgba(16, 185, 129, 0.2);
     border-color: #10b981;
@@ -1613,9 +1614,123 @@ body.sidebar-closed .sidebar-toggle {
     border-color: rgba(239, 68, 68, 0.28);
     color: #b91c1c;
 }
+
 .feedback-badge-btn.fb-hot:hover {
     background: rgba(239, 68, 68, 0.2);
     border-color: #ef4444;
+}
+
+/* ─── Table Pagination ─── */
+.table-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+    background: rgba(255, 255, 255, 0.78);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-card);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.pagination-info {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.pagination-info strong {
+    color: var(--accent-dark);
+    font-weight: 700;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: var(--font);
+    color: var(--accent-dark);
+    background: rgba(255, 255, 255, 0.9);
+    border: 1.5px solid var(--border-accent);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    border-color: var(--border-subtle);
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--text-secondary);
+}
+
+.pagination-pages {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pagination-page-btn {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font);
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.8);
+    border: 1.5px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+}
+
+.pagination-page-btn:hover:not(.active) {
+    background: rgba(168, 85, 247, 0.15);
+    color: var(--accent-dark);
+    border-color: var(--border-accent);
+}
+
+.pagination-page-btn.active {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    color: #ffffff;
+    border-color: transparent;
+    box-shadow: 0 3px 10px rgba(124, 58, 237, 0.35);
+    font-weight: 700;
+}
+
+.pagination-ellipsis {
+    padding: 0 4px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    user-select: none;
 }
 
 /* ─── Feedback Edit Modal ─── */
@@ -1932,8 +2047,8 @@ body.sidebar-closed .sidebar-toggle {
 [data-theme="dark"] body,
 body[data-theme="dark"] {
     background: radial-gradient(circle at 85% 15%, rgba(192, 132, 252, 0.08) 0%, transparent 45%),
-                radial-gradient(circle at 15% 85%, rgba(147, 51, 234, 0.06) 0%, transparent 45%),
-                var(--bg-body);
+        radial-gradient(circle at 15% 85%, rgba(147, 51, 234, 0.06) 0%, transparent 45%),
+        var(--bg-body);
     background-attachment: fixed;
     color: var(--text-primary);
 }
@@ -2307,6 +2422,61 @@ body[data-theme="dark"] {
     font-weight: 400;
 }
 
+[data-theme="dark"] .table-pagination {
+    background: rgba(20, 13, 38, 0.4);
+    border: 1px solid rgba(192, 132, 252, 0.15);
+    box-shadow: none;
+}
+
+[data-theme="dark"] .pagination-info {
+    color: #c4b5fd;
+}
+
+[data-theme="dark"] .pagination-info strong {
+    color: #f5f3ff;
+}
+
+[data-theme="dark"] .pagination-btn {
+    background: rgba(45, 27, 85, 0.65);
+    color: #f3e8ff;
+    border-color: rgba(192, 132, 252, 0.3);
+}
+
+[data-theme="dark"] .pagination-btn:hover:not(:disabled) {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+    box-shadow: 0 4px 14px rgba(192, 132, 252, 0.35);
+}
+
+[data-theme="dark"] .pagination-btn:disabled {
+    background: rgba(30, 20, 60, 0.3);
+    color: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .pagination-page-btn {
+    background: rgba(35, 22, 65, 0.65);
+    color: #e9d5ff;
+    border-color: rgba(192, 132, 252, 0.2);
+}
+
+[data-theme="dark"] .pagination-page-btn:hover:not(.active) {
+    background: rgba(192, 132, 252, 0.2);
+    color: #ffffff;
+    border-color: rgba(192, 132, 252, 0.45);
+}
+
+[data-theme="dark"] .pagination-page-btn.active {
+    background: linear-gradient(135deg, #9333ea 0%, #c084fc 100%);
+    color: #ffffff;
+    box-shadow: 0 3px 12px rgba(168, 85, 247, 0.45);
+}
+
+[data-theme="dark"] .pagination-ellipsis {
+    color: #a78bfa;
+}
+
 [data-theme="dark"] .footer p {
     color: #9d8ec2;
 }
@@ -2336,6 +2506,7 @@ body[data-theme="dark"] {
     border-color: rgba(59, 130, 246, 0.35);
     color: #93c5fd;
 }
+
 [data-theme="dark"] .feedback-badge-btn.fb-cold:hover {
     background: rgba(59, 130, 246, 0.28);
     box-shadow: 0 0 14px rgba(59, 130, 246, 0.35);
@@ -2346,6 +2517,7 @@ body[data-theme="dark"] {
     border-color: rgba(16, 185, 129, 0.35);
     color: #6ee7b7;
 }
+
 [data-theme="dark"] .feedback-badge-btn.fb-perfect:hover {
     background: rgba(16, 185, 129, 0.28);
     box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
@@ -2356,6 +2528,7 @@ body[data-theme="dark"] {
     border-color: rgba(239, 68, 68, 0.35);
     color: #fca5a5;
 }
+
 [data-theme="dark"] .feedback-badge-btn.fb-hot:hover {
     background: rgba(239, 68, 68, 0.28);
     box-shadow: 0 0 14px rgba(239, 68, 68, 0.35);
@@ -2537,5 +2710,17 @@ body[data-theme="dark"] {
 
     .weather-card .wc-temp {
         font-size: 36px;
+    }
+
+    .table-pagination {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+    }
+
+    .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 }

@@ -8,6 +8,9 @@ let currentCity = localStorage.getItem('lastCity') || 'Istanbul';
 let pinnedCities = JSON.parse(localStorage.getItem('pinnedCities') || '[]');
 let currentHistoryData = {};
 let currentEditingRecordId = null;
+const HISTORY_PAGE_SIZE = 11;
+let currentHistoryPage = 1;
+let cachedHistoryList = [];
 
 const FEEDBACK_MAP = {
     '-1': '🥶 Üşüdüm',
@@ -307,6 +310,11 @@ async function loadHistory() {
             return;
         }
 
+        cachedHistoryList = [...history].reverse();
+        const totalPages = Math.ceil(cachedHistoryList.length / HISTORY_PAGE_SIZE) || 1;
+        if (currentHistoryPage > totalPages) currentHistoryPage = totalPages;
+        if (currentHistoryPage < 1) currentHistoryPage = 1;
+
         // Stats cards
         let html = `
             <div class="stats-grid">
@@ -327,64 +335,8 @@ async function loadHistory() {
                     <div class="sc-label">Max Sıcaklık</div>
                 </div>
             </div>
-        `;
-
-        // Table
-        const reversed = [...history].reverse();
-        html += `
-            <div class="data-table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>📅 Tarih</th>
-                            <th>🌡️ Sıcaklık</th>
-                            <th>🤒 Hissedilen</th>
-                            <th>💧 Nem</th>
-                            <th>💨 Rüzgar</th>
-                            <th>👕 Üst</th>
-                            <th>👖 Alt</th>
-                            <th>🧥 Dış</th>
-                            <th>👟 Ayakkabı</th>
-                            <th>🧣 Ekstra</th>
-                            <th>🎯 Geri Bildirim</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${reversed.map(row => {
-                            const gb = parseInt(row.Geri_Bildirim) || 0;
-                            const badgeClass = gb === -1 ? 'fb-cold' : gb === 1 ? 'fb-hot' : 'fb-perfect';
-                            const badgeText = FEEDBACK_MAP[String(gb)] || '👌 Tam Kararında';
-                            return `
-                                <tr>
-                                    <td>${row.Tarih}</td>
-                                    <td>${row.Sicaklik}°C</td>
-                                    <td>${row.Hissedilen}°C</td>
-                                    <td>%${row.Nem}</td>
-                                    <td>${row.Ruzgar} km/h</td>
-                                    <td>${row.Ust_Giyim}</td>
-                                    <td>${row.Alt_Giyim}</td>
-                                    <td>${row.Dis_Giyim}</td>
-                                    <td>${row.Ayakkabi}</td>
-                                    <td>${row.Ekstra}</td>
-                                    <td>
-                                        <button type="button"
-                                                class="feedback-badge-btn ${badgeClass}"
-                                                onclick="openFeedbackModal(${row.id})"
-                                                title="Geri bildirimi düzenlemek için tıklayın">
-                                            <span>${badgeText}</span>
-                                            <i class="fas fa-pen-to-square fb-edit-icon" aria-hidden="true"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                </table>
-            </div>
-        `;
-
-        // Actions
-        html += `
+            <div class="data-table-container" id="history-table-container"></div>
+            <div id="history-pagination-container"></div>
             <div class="actions-row">
                 <a href="api/indir" class="btn-secondary" download><i class="fas fa-file-csv"></i> Verileri CSV Olarak İndir</a>
             </div>
@@ -398,11 +350,139 @@ async function loadHistory() {
         `;
 
         container.innerHTML = html;
+        renderHistoryTablePage();
 
     } catch (err) {
         console.error('Geçmiş yüklenirken hata:', err);
         container.innerHTML = '<div class="info-box" style="border-left-color:#ef4444">❌ Veriler yüklenirken hata oluştu.</div>';
     }
+}
+
+function changeHistoryPage(page) {
+    const totalPages = Math.ceil(cachedHistoryList.length / HISTORY_PAGE_SIZE) || 1;
+    if (page < 1 || page > totalPages) return;
+    currentHistoryPage = page;
+    renderHistoryTablePage();
+    const tableEl = document.getElementById('history-table-container');
+    if (tableEl) {
+        tableEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+window.changeHistoryPage = changeHistoryPage;
+
+function renderHistoryTablePage() {
+    const tableContainer = document.getElementById('history-table-container');
+    const paginationContainer = document.getElementById('history-pagination-container');
+    if (!tableContainer) return;
+
+    const totalItems = cachedHistoryList.length;
+    const totalPages = Math.ceil(totalItems / HISTORY_PAGE_SIZE) || 1;
+
+    if (currentHistoryPage > totalPages) currentHistoryPage = totalPages;
+    if (currentHistoryPage < 1) currentHistoryPage = 1;
+
+    const startIndex = (currentHistoryPage - 1) * HISTORY_PAGE_SIZE;
+    const endIndex = Math.min(startIndex + HISTORY_PAGE_SIZE, totalItems);
+    const pageRows = cachedHistoryList.slice(startIndex, endIndex);
+
+    tableContainer.innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>📅 Tarih</th>
+                    <th>🌡️ Sıcaklık</th>
+                    <th>🤒 Hissedilen</th>
+                    <th>💧 Nem</th>
+                    <th>💨 Rüzgar</th>
+                    <th>👕 Üst</th>
+                    <th>👖 Alt</th>
+                    <th>🧥 Dış</th>
+                    <th>👟 Ayakkabı</th>
+                    <th>🧣 Ekstra</th>
+                    <th>🎯 Geri Bildirim</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${pageRows.map(row => {
+                    const gb = parseInt(row.Geri_Bildirim) || 0;
+                    const badgeClass = gb === -1 ? 'fb-cold' : gb === 1 ? 'fb-hot' : 'fb-perfect';
+                    const badgeText = FEEDBACK_MAP[String(gb)] || '👌 Tam Kararında';
+                    return `
+                        <tr>
+                            <td>${row.Tarih}</td>
+                            <td>${row.Sicaklik}°C</td>
+                            <td>${row.Hissedilen}°C</td>
+                            <td>%${row.Nem}</td>
+                            <td>${row.Ruzgar} km/h</td>
+                            <td>${row.Ust_Giyim}</td>
+                            <td>${row.Alt_Giyim}</td>
+                            <td>${row.Dis_Giyim}</td>
+                            <td>${row.Ayakkabi}</td>
+                            <td>${row.Ekstra}</td>
+                            <td>
+                                <button type="button"
+                                        class="feedback-badge-btn ${badgeClass}"
+                                        onclick="openFeedbackModal(${row.id})"
+                                        title="Geri bildirimi düzenlemek için tıklayın">
+                                    <span>${badgeText}</span>
+                                    <i class="fas fa-pen-to-square fb-edit-icon" aria-hidden="true"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+
+    if (!paginationContainer) return;
+
+    if (totalItems <= HISTORY_PAGE_SIZE) {
+        paginationContainer.innerHTML = '';
+        return;
+    }
+
+    // Build page numbers
+    let pagesHtml = '';
+    for (let p = 1; p <= totalPages; p++) {
+        if (totalPages > 7) {
+            if (p === 1 || p === totalPages || (p >= currentHistoryPage - 1 && p <= currentHistoryPage + 1)) {
+                pagesHtml += `
+                    <button type="button" class="pagination-page-btn ${p === currentHistoryPage ? 'active' : ''}"
+                            onclick="changeHistoryPage(${p})">${p}</button>
+                `;
+            } else if (p === currentHistoryPage - 2 || p === currentHistoryPage + 2) {
+                pagesHtml += `<span class="pagination-ellipsis">&hellip;</span>`;
+            }
+        } else {
+            pagesHtml += `
+                <button type="button" class="pagination-page-btn ${p === currentHistoryPage ? 'active' : ''}"
+                        onclick="changeHistoryPage(${p})">${p}</button>
+            `;
+        }
+    }
+
+    const prevDisabled = currentHistoryPage <= 1 ? 'disabled' : '';
+    const nextDisabled = currentHistoryPage >= totalPages ? 'disabled' : '';
+
+    paginationContainer.innerHTML = `
+        <div class="table-pagination">
+            <div class="pagination-info">
+                Toplam <strong>${totalItems}</strong> kayıttan <strong>${startIndex + 1}–${endIndex}</strong> arası gösteriliyor
+            </div>
+            <div class="pagination-controls">
+                <button type="button" class="pagination-btn" onclick="changeHistoryPage(${currentHistoryPage - 1})" ${prevDisabled}>
+                    <i class="fas fa-chevron-left"></i> Önceki
+                </button>
+                <div class="pagination-pages">
+                    ${pagesHtml}
+                </div>
+                <button type="button" class="pagination-btn" onclick="changeHistoryPage(${currentHistoryPage + 1})" ${nextDisabled}>
+                    Sonraki <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    `;
 }
 
 
@@ -872,8 +952,7 @@ function setupForm() {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
 
-        const gbRadio = document.querySelector('input[name="geri-bildirim"]:checked');
-        const geri_bildirim = gbRadio ? parseInt(gbRadio.value) : 0;
+        const geri_bildirim = 0;
 
         const data = {
             tarih: currentWeather.tarih,
@@ -907,7 +986,6 @@ function setupForm() {
 
                 // Reset form to defaults
                 form.reset();
-                document.querySelector('input[name="geri-bildirim"][value="0"]').checked = true;
 
                 // Refresh stats and recommendations silently
                 await loadStats();
