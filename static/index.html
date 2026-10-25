@@ -190,6 +190,43 @@
         </div>
     </main>
 
+    <!-- ─── Feedback Edit Modal ─── -->
+    <div id="feedback-modal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-pen-to-square"></i> Geri Bildirimi Düzenle</h3>
+                <button type="button" class="modal-close" onclick="closeFeedbackModal()" aria-label="Kapat">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-record-summary" id="modal-record-summary"></div>
+                <p class="modal-subtitle">Bu gündeki kıyafet kombinin için hissettiğin durumu güncelle:</p>
+                <div class="feedback-options modal-feedback-options">
+                    <label class="feedback-option cold" id="modal-fb-cold">
+                        <input type="radio" name="modal-geri-bildirim" value="-1">
+                        <span class="fb-emoji">🥶</span>
+                        <span class="fb-text">Üşüdüm</span>
+                    </label>
+                    <label class="feedback-option perfect" id="modal-fb-perfect">
+                        <input type="radio" name="modal-geri-bildirim" value="0">
+                        <span class="fb-emoji">👌</span>
+                        <span class="fb-text">Tam Kararında</span>
+                    </label>
+                    <label class="feedback-option hot" id="modal-fb-hot">
+                        <input type="radio" name="modal-geri-bildirim" value="1">
+                        <span class="fb-emoji">🥵</span>
+                        <span class="fb-text">Terledim</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeFeedbackModal()">Vazgeç</button>
+                <button type="button" class="btn-primary" id="btn-modal-save" onclick="saveFeedbackModal()">
+                    <i class="fas fa-check"></i> Değişikliği Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div id="toast-container"></div>
 

@@ -10,7 +10,7 @@ from flask import Flask, jsonify, request, send_file, send_from_directory
 from flask.json.provider import DefaultJSONProvider
 from hava_durumu import hava_durumunu_getir, hava_durumu_emoji
 from model import (
-    tahmin_yap, veri_kaydet, veri_yukle, istatistikler,
+    tahmin_yap, veri_kaydet, veri_yukle, istatistikler, geribildirim_guncelle,
     UST_GIYIM_SECENEKLERI, ALT_GIYIM_SECENEKLERI, DIS_GIYIM_SECENEKLERI,
     AYAKKABI_SECENEKLERI, EKSTRA_SECENEKLERI, GERI_BILDIRIM_SECENEKLERI,
     CSV_DOSYASI
@@ -77,7 +77,36 @@ def api_kaydet():
 def api_gecmis():
     """Tüm geçmiş kayıtları döndürür."""
     df = veri_yukle()
-    return jsonify(df.to_dict(orient='records'))
+    kayitlar = []
+    for idx, row in df.iterrows():
+        r = row.to_dict()
+        r['id'] = int(idx)
+        kayitlar.append(r)
+    return jsonify(kayitlar)
+
+
+@app.route('/api/geribildirim-guncelle', methods=['POST'])
+def api_geribildirim_guncelle():
+    """Belirli bir kaydın geri bildirimini günceller."""
+    data = request.json or {}
+    kayit_id = data.get('id')
+    yeni_gb = data.get('geri_bildirim')
+    tarih = data.get('tarih')
+
+    if kayit_id is None or yeni_gb is None:
+        return jsonify({'basarili': False, 'error': 'Eksik parametre'}), 400
+
+    try:
+        kayit_id = int(kayit_id)
+        yeni_gb = int(yeni_gb)
+    except (ValueError, TypeError):
+        return jsonify({'basarili': False, 'error': 'Geçersiz parametre tipi'}), 400
+
+    if yeni_gb not in [-1, 0, 1]:
+        return jsonify({'basarili': False, 'error': 'Geçersiz geri bildirim değeri'}), 400
+
+    basarili = geribildirim_guncelle(kayit_id, yeni_gb, tarih=tarih)
+    return jsonify({'basarili': basarili})
 
 
 @app.route('/api/istatistikler')

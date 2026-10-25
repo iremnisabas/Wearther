@@ -95,6 +95,35 @@ def veri_kaydet(tarih: str, sicaklik: float, hissedilen: float,
         return False
 
 
+def geribildirim_guncelle(index: int, yeni_geribildirim: int, tarih: str = None) -> bool:
+    """
+    Belirtilen indeksteki kaydın geri bildirimini günceller.
+
+    Args:
+        index: Satır indeksi
+        yeni_geribildirim: -1 (Üşüdüm), 0 (Tam Kararında), 1 (Terledim)
+        tarih: Opsiyonel güvenlik doğrulaması için tarih dizesi
+
+    Returns:
+        True = başarılı, False = hata
+    """
+    try:
+        df = veri_yukle()
+        if 0 <= index < len(df):
+            # Tarih verilmişse ve indeks uyuşmuyorsa, tarihi eşleşen satırı bul
+            if tarih and str(df.at[index, "Tarih"]) != str(tarih):
+                eslesenler = df[df["Tarih"] == str(tarih)].index
+                if len(eslesenler) > 0:
+                    index = eslesenler[0]
+            df.at[index, "Geri_Bildirim"] = int(yeni_geribildirim)
+            df.to_csv(CSV_DOSYASI, index=False)
+            return True
+        return False
+    except Exception as e:
+        print(f"Geri bildirim güncellenirken hata: {e}")
+        return False
+
+
 def tahmin_yap(sicaklik: float, hissedilen: float, nem: int, ruzgar: float) -> dict | None:
     """
     KNN algoritması ile mevcut hava durumuna en uygun kıyafet önerisini üretir.

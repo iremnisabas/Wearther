@@ -1513,7 +1513,7 @@ body.sidebar-closed .sidebar-toggle {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 14px 12px;
+    padding: 14px 8px;
     text-align: left;
     font-size: 11px;
     white-space: nowrap;
@@ -1522,6 +1522,11 @@ body.sidebar-closed .sidebar-toggle {
     z-index: 1;
     backdrop-filter: blur(8px);
     border-bottom: 1.5px solid var(--border-subtle);
+}
+
+.data-table thead th:last-child,
+.data-table tbody td:last-child {
+    text-align: center;
 }
 
 .data-table tbody tr {
@@ -1534,7 +1539,7 @@ body.sidebar-closed .sidebar-toggle {
 }
 
 .data-table tbody td {
-    padding: 13px 12px;
+    padding: 13px 8px;
     white-space: nowrap;
     color: var(--text-primary);
     font-weight: 500;
@@ -1542,6 +1547,189 @@ body.sidebar-closed .sidebar-toggle {
 
 .data-table tbody tr:last-child {
     border-bottom: none;
+}
+
+/* ─── Feedback Badges in History Table ─── */
+.feedback-badge-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all var(--transition);
+    white-space: nowrap;
+    user-select: none;
+    box-shadow: 0 2px 6px rgba(124, 58, 237, 0.04);
+}
+
+.feedback-badge-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.12);
+}
+
+.feedback-badge-btn:active {
+    transform: translateY(0);
+}
+
+.feedback-badge-btn .fb-edit-icon {
+    font-size: 11px;
+    opacity: 0.6;
+    transition: opacity var(--transition), transform var(--transition);
+}
+
+.feedback-badge-btn:hover .fb-edit-icon {
+    opacity: 1;
+    transform: scale(1.15) rotate(12deg);
+}
+
+/* Light Theme Badges */
+.feedback-badge-btn.fb-cold {
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.28);
+    color: #1d4ed8;
+}
+.feedback-badge-btn.fb-cold:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #3b82f6;
+}
+
+.feedback-badge-btn.fb-perfect {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.28);
+    color: #047857;
+}
+.feedback-badge-btn.fb-perfect:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+}
+
+.feedback-badge-btn.fb-hot {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.28);
+    color: #b91c1c;
+}
+.feedback-badge-btn.fb-hot:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+}
+
+/* ─── Feedback Edit Modal ─── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(10, 6, 20, 0.65);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-dialog {
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-end) 100%);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35), 0 0 35px var(--accent-glow);
+    width: 100%;
+    max-width: 480px;
+    padding: 28px;
+    transform: scale(0.92);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-overlay.active .modal-dialog {
+    transform: scale(1);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-title i {
+    color: var(--accent);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 26px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: all var(--transition);
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+    background: var(--accent-dim);
+}
+
+.modal-record-summary {
+    background: var(--accent-dim);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    font-size: 13px;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.modal-record-summary .mrs-date {
+    font-weight: 700;
+    color: var(--accent-dark);
+}
+
+.modal-record-summary .mrs-outfit {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.modal-subtitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
 }
 
 
@@ -2140,6 +2328,41 @@ body[data-theme="dark"] {
 [data-theme="dark"] .sidebar-toggle:hover {
     background: rgba(192, 132, 252, 0.25);
     box-shadow: 0 0 16px var(--accent-glow);
+}
+
+/* Dark Theme Feedback Badges & Modal */
+[data-theme="dark"] .feedback-badge-btn.fb-cold {
+    background: rgba(59, 130, 246, 0.16);
+    border-color: rgba(59, 130, 246, 0.35);
+    color: #93c5fd;
+}
+[data-theme="dark"] .feedback-badge-btn.fb-cold:hover {
+    background: rgba(59, 130, 246, 0.28);
+    box-shadow: 0 0 14px rgba(59, 130, 246, 0.35);
+}
+
+[data-theme="dark"] .feedback-badge-btn.fb-perfect {
+    background: rgba(16, 185, 129, 0.16);
+    border-color: rgba(16, 185, 129, 0.35);
+    color: #6ee7b7;
+}
+[data-theme="dark"] .feedback-badge-btn.fb-perfect:hover {
+    background: rgba(16, 185, 129, 0.28);
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
+}
+
+[data-theme="dark"] .feedback-badge-btn.fb-hot {
+    background: rgba(239, 68, 68, 0.16);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+}
+[data-theme="dark"] .feedback-badge-btn.fb-hot:hover {
+    background: rgba(239, 68, 68, 0.28);
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.35);
+}
+
+[data-theme="dark"] .modal-record-summary .mrs-date {
+    color: var(--accent);
 }
 
 

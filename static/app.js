@@ -6,6 +6,8 @@
 let currentWeather = null;
 let currentCity = localStorage.getItem('lastCity') || 'Istanbul';
 let pinnedCities = JSON.parse(localStorage.getItem('pinnedCities') || '[]');
+let currentHistoryData = {};
+let currentEditingRecordId = null;
 
 const FEEDBACK_MAP = {
     '-1': '🥶 Üşüdüm',
@@ -19,6 +21,7 @@ document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
     setupThemeToggle();
+    setupFeedbackModalListeners();
     document.getElementById('sehir-input').value = currentCity;
     setupTabs();
     setupSidebar();
@@ -288,6 +291,11 @@ async function loadHistory() {
         const history = await histRes.json();
         const stats = await statsRes.json();
 
+        currentHistoryData = {};
+        history.forEach(r => {
+            currentHistoryData[r.id] = r;
+        });
+
         if (history.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
@@ -342,21 +350,34 @@ async function loadHistory() {
                         </tr>
                     </thead>
                     <tbody>
-                        ${reversed.map(row => `
-                            <tr>
-                                <td>${row.Tarih}</td>
-                                <td>${row.Sicaklik}°C</td>
-                                <td>${row.Hissedilen}°C</td>
-                                <td>%${row.Nem}</td>
-                                <td>${row.Ruzgar} km/h</td>
-                                <td>${row.Ust_Giyim}</td>
-                                <td>${row.Alt_Giyim}</td>
-                                <td>${row.Dis_Giyim}</td>
-                                <td>${row.Ayakkabi}</td>
-                                <td>${row.Ekstra}</td>
-                                <td>${FEEDBACK_MAP[String(row.Geri_Bildirim)] || '❓'}</td>
-                            </tr>
-                        `).join('')}
+                        ${reversed.map(row => {
+                            const gb = parseInt(row.Geri_Bildirim) || 0;
+                            const badgeClass = gb === -1 ? 'fb-cold' : gb === 1 ? 'fb-hot' : 'fb-perfect';
+                            const badgeText = FEEDBACK_MAP[String(gb)] || '👌 Tam Kararında';
+                            return `
+                                <tr>
+                                    <td>${row.Tarih}</td>
+                                    <td>${row.Sicaklik}°C</td>
+                                    <td>${row.Hissedilen}°C</td>
+                                    <td>%${row.Nem}</td>
+                                    <td>${row.Ruzgar} km/h</td>
+                                    <td>${row.Ust_Giyim}</td>
+                                    <td>${row.Alt_Giyim}</td>
+                                    <td>${row.Dis_Giyim}</td>
+                                    <td>${row.Ayakkabi}</td>
+                                    <td>${row.Ekstra}</td>
+                                    <td>
+                                        <button type="button"
+                                                class="feedback-badge-btn ${badgeClass}"
+                                                onclick="openFeedbackModal(${row.id})"
+                                                title="Geri bildirimi düzenlemek için tıklayın">
+                                            <span>${badgeText}</span>
+                                            <i class="fas fa-pen-to-square fb-edit-icon" aria-hidden="true"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
                     </tbody>
                 </table>
             </div>
@@ -926,6 +947,118 @@ async function deleteLastRecord() {
         showToast('❌ Silme sırasında hata oluştu.', 'error');
     }
 }
+
+
+// ═══════════════════════════════════════════
+// FEEDBACK MODAL (HISTORY EDIT)
+// ═══════════════════════════════════════════
+
+function openFeedbackModal(recordId) {
+    const record = currentHistoryData[recordId];
+    if (!record) return;
+
+    currentEditingRecordId = recordId;
+
+    const summaryEl = document.getElementById('modal-record-summary');
+    if (summaryEl) {
+        summaryEl.innerHTML = `
+            <div class="mrs-date"><i class="fas fa-calendar-day"></i> ${record.Tarih} &bull; ${record.Sicaklik}°C (Hissedilen: ${record.Hissedilen}°C)</div>
+            <div class="mrs-outfit">👕 ${record.Ust_Giyim} &bull; 👖 ${record.Alt_Giyim} &bull; 🧥 ${record.Dis_Giyim} &bull; 👟 ${record.Ayakkabi}${record.Ekstra && record.Ekstra !== 'Yok' ? ' &bull; 🧣 ' + record.Ekstra : ''}</div>
+        `;
+    }
+
+    const currentVal = String(record.Geri_Bildirim !== undefined ? record.Geri_Bildirim : 0);
+    const radio = document.querySelector(`input[name="modal-geri-bildirim"][value="${currentVal}"]`);
+    if (radio) {
+        radio.checked = true;
+    }
+
+    const modal = document.getElementById('feedback-modal');
+    if (modal) {
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+}
+
+function closeFeedbackModal() {
+    const modal = document.getElementById('feedback-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+    currentEditingRecordId = null;
+}
+
+async function saveFeedbackModal() {
+    if (currentEditingRecordId === null || currentEditingRecordId === undefined) return;
+    const record = currentHistoryData[currentEditingRecordId];
+    if (!record) return;
+
+    const selectedRadio = document.querySelector('input[name="modal-geri-bildirim"]:checked');
+    if (!selectedRadio) return;
+    const newFeedback = parseInt(selectedRadio.value);
+
+    // If unchanged, just close
+    if (newFeedback === parseInt(record.Geri_Bildirim)) {
+        closeFeedbackModal();
+        return;
+    }
+
+    const saveBtn = document.getElementById('btn-modal-save');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+
+    try {
+        const res = await fetch('api/geribildirim-guncelle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: record.id,
+                geri_bildirim: newFeedback,
+                tarih: record.Tarih
+            })
+        });
+
+        const result = await res.json();
+        if (result.basarili) {
+            closeFeedbackModal();
+            showToast('Geri bildirim güncellendi 🎯', 'success');
+            await loadHistory();
+            await loadStats();
+            await refreshData(false);
+        } else {
+            showToast('❌ Güncelleme yapılamadı: ' + (result.error || 'Bilinmeyen hata'), 'error');
+        }
+    } catch (err) {
+        console.error('Geri bildirim güncellenirken hata:', err);
+        showToast('❌ Sunucu bağlantı hatası.', 'error');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+    }
+}
+
+function setupFeedbackModalListeners() {
+    const modal = document.getElementById('feedback-modal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeFeedbackModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeFeedbackModal();
+        }
+    });
+}
+
+window.openFeedbackModal = openFeedbackModal;
+window.closeFeedbackModal = closeFeedbackModal;
+window.saveFeedbackModal = saveFeedbackModal;
 
 
 // ═══════════════════════════════════════════
