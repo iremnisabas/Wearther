@@ -8,7 +8,7 @@ import json
 import numpy as np
 from flask import Flask, jsonify, request, send_file, send_from_directory
 from flask.json.provider import DefaultJSONProvider
-from hava_durumu import hava_durumunu_getir, hava_durumu_emoji
+from hava_durumu import hava_durumunu_getir, hava_durumu_emoji, tahmin_icin_hava_getir
 from model import (
     tahmin_yap, veri_kaydet, veri_yukle, istatistikler, geribildirim_guncelle,
     UST_GIYIM_SECENEKLERI, ALT_GIYIM_SECENEKLERI, DIS_GIYIM_SECENEKLERI,
@@ -42,14 +42,26 @@ def index():
 
 @app.route('/api/oneri')
 def api_oneri():
-    """Hava durumu + kıyafet önerisi döndürür."""
+    """Hava durumu + kıyafet önerisi döndürür.
+    
+    Kıyafet tahmini için anlık hava verisi (%60) ve önümüzdeki
+    6 saatin ortalaması (%40) birlikte kullanılır.
+    UI'da anlık veriler gösterilirken model harmanlanmış verileri kullanır.
+    """
     sehir = request.args.get('sehir', 'Istanbul')
-    hava = hava_durumunu_getir(sehir)
+    hava = tahmin_icin_hava_getir(sehir)
     if hava is None:
         return jsonify({'error': 'Hava durumu alınamadı'}), 500
 
     hava['emoji'] = hava_durumu_emoji(hava.get('aciklama', ''))
-    oneri = tahmin_yap(hava['sicaklik'], hava['hissedilen'], hava['nem'], hava['ruzgar'])
+
+    # Model için harmanlanmış (anlık + 6 saat ort.) verileri kullan
+    oneri = tahmin_yap(
+        hava['tahmin_sicaklik'],
+        hava['tahmin_hissedilen'],
+        hava['tahmin_nem'],
+        hava['tahmin_ruzgar']
+    )
     return jsonify({'oneri': oneri, 'hava': hava})
 
 
