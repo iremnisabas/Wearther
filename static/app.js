@@ -792,11 +792,29 @@ function renderRecommendations(oneri, hava) {
             .map(a => '<span class="alt-chip">' + a.kiyafet + ' %' + a.oran + '</span>')
             .join('');
 
+        const isAdjusted = Boolean(data.duzeltildi);
+        const isWarm = oneri.isi_duzeltme?.yon === 'isit';
+        const thermalBadge = isAdjusted ? `
+            <div class="thermal-badge ${isWarm ? 'warm' : 'cool'}" title="Geçmiş geri bildirimlerinize göre ısı puanı güncellendi">
+                <span class="tb-icon">${isWarm ? '🔥' : '❄️'}</span>
+                <span class="tb-text">Isı düzeltmesi: <s>${data.knn_tahmin}</s> → <strong>${data.tahmin}</strong></span>
+            </div>
+        ` : '';
+
+        const confidenceHtml = isAdjusted ? `
+            <div class="rc-confidence rc-adjusted">
+                <span class="rc-adjusted-tag"><i class="fas fa-sliders"></i> Geri bildirime göre ayarlandı</span>
+            </div>
+        ` : `
+            <div class="rc-confidence">Güven: %${data.guven}</div>
+        `;
+
         return `
-            <div class="rec-card" style="animation-delay:${delay}s">
+            <div class="rec-card ${isAdjusted ? 'rec-card-adjusted' : ''}" style="animation-delay:${delay}s">
                 <div class="rc-category">${emoji} ${kategori}</div>
                 <div class="rc-item">${data.tahmin}</div>
-                <div class="rc-confidence">Güven: %${data.guven}</div>
+                ${thermalBadge}
+                ${confidenceHtml}
                 <div class="confidence-bar">
                     <div class="confidence-fill" data-width="${data.guven}"></div>
                 </div>
@@ -806,6 +824,26 @@ function renderRecommendations(oneri, hava) {
     }
 
     let html = '<h3 class="rec-section-title"><i class="fas fa-robot" style="color: var(--accent);"></i> Yapay Zeka Önerisi</h3>';
+
+    if (oneri.isi_duzeltme && oneri.isi_duzeltme.uygulandi) {
+        const d = oneri.isi_duzeltme;
+        const isWarm = d.yon === 'isit';
+        const icon = isWarm ? '🔥' : '❄️';
+        const aciklama = isWarm
+            ? 'Benzer havalarda bu kombinle <strong>üşüdüğün</strong> için bir kat daha <strong>sıcak</strong> bir parça önerildi.'
+            : 'Benzer havalarda bu kombinle <strong>terlediğin</strong> için daha <strong>serin</strong> bir parça önerildi.';
+
+        html += `
+            <div class="thermal-note ${isWarm ? 'warm' : 'cool'}">
+                <div class="tn-icon">${icon}</div>
+                <div class="tn-body">
+                    <div class="tn-title">Termal Akıllı Düzeltme Devrede</div>
+                    <div class="tn-desc">${aciklama}</div>
+                </div>
+            </div>
+        `;
+    }
+
     html += '<div class="rec-grid">';
     html += recCard('👕', 'Üst Giyim', oneri.ust_giyim, 0.05);
     html += recCard('👖', 'Alt Giyim', oneri.alt_giyim, 0.1);

@@ -1130,6 +1130,140 @@ body.sidebar-closed .sidebar-toggle {
     border-color: var(--accent);
 }
 
+/* ─── Thermal Adjustment Note & Badges ─── */
+.thermal-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    animation: fadeSlideUp 0.4s ease both;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+}
+
+.thermal-note.warm {
+    background: linear-gradient(135deg, rgba(255, 247, 237, 0.95) 0%, rgba(254, 237, 213, 0.85) 100%);
+    border: 1.5px solid rgba(249, 115, 22, 0.35);
+    color: #9a3412;
+}
+
+.thermal-note.cool {
+    background: linear-gradient(135deg, rgba(240, 249, 255, 0.95) 0%, rgba(224, 242, 254, 0.85) 100%);
+    border: 1.5px solid rgba(14, 165, 233, 0.35);
+    color: #075985;
+}
+
+.thermal-note .tn-icon {
+    font-size: 26px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.thermal-note .tn-body {
+    flex: 1;
+}
+
+.thermal-note .tn-title {
+    font-size: 14.5px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    letter-spacing: -0.2px;
+}
+
+.thermal-note.warm .tn-title {
+    color: #c2410c;
+}
+
+.thermal-note.cool .tn-title {
+    color: #0369a1;
+}
+
+.thermal-note .tn-desc {
+    font-size: 13.5px;
+    line-height: 1.55;
+    margin-bottom: 0;
+    color: var(--text-primary);
+}
+
+.thermal-note .tn-meta {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.thermal-note .tn-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid currentColor;
+    font-size: 11.5px;
+}
+
+/* Card Badge */
+.thermal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    font-weight: 600;
+    margin: 8px 0 10px;
+    line-height: 1.4;
+    width: fit-content;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.thermal-badge.warm {
+    background: rgba(249, 115, 22, 0.12);
+    color: #c2410c;
+    border: 1.5px solid rgba(249, 115, 22, 0.32);
+}
+
+.thermal-badge.cool {
+    background: rgba(14, 165, 233, 0.12);
+    color: #0369a1;
+    border: 1.5px solid rgba(14, 165, 233, 0.32);
+}
+
+.thermal-badge s {
+    opacity: 0.7;
+    font-weight: 500;
+}
+
+.rec-card.rec-card-adjusted {
+    position: relative;
+    border-color: rgba(249, 115, 22, 0.45);
+    box-shadow: 0 10px 28px -4px rgba(249, 115, 22, 0.16);
+}
+
+.rec-card.rec-card-adjusted:hover {
+    border-color: rgba(249, 115, 22, 0.7);
+    box-shadow: 0 16px 36px -4px rgba(249, 115, 22, 0.25);
+}
+
+.rc-confidence.rc-adjusted {
+    margin-top: 4px;
+}
+
+.rc-adjusted-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #d97706;
+}
+
 
 /* ═══════════════════════════════════════════
    SIMILAR DAYS
@@ -2228,6 +2362,64 @@ body[data-theme="dark"] {
 
 [data-theme="dark"] .alt-chip:hover {
     background: rgba(192, 132, 252, 0.22);
+}
+
+/* ─── Dark Theme Thermal Adjustments ─── */
+[data-theme="dark"] .thermal-note.warm {
+    background: linear-gradient(135deg, rgba(67, 20, 7, 0.65) 0%, rgba(124, 45, 18, 0.45) 100%);
+    border: 1.5px solid rgba(251, 146, 60, 0.4);
+    color: #fed7aa;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .thermal-note.cool {
+    background: linear-gradient(135deg, rgba(8, 47, 73, 0.65) 0%, rgba(12, 74, 110, 0.45) 100%);
+    border: 1.5px solid rgba(56, 189, 248, 0.4);
+    color: #bae6fd;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .thermal-note.warm .tn-title {
+    color: #fb923c;
+}
+
+[data-theme="dark"] .thermal-note.cool .tn-title {
+    color: #38bdf8;
+}
+
+[data-theme="dark"] .thermal-note .tn-desc {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .thermal-note .tn-meta {
+    color: #cbd5e1;
+}
+
+[data-theme="dark"] .thermal-note .tn-pill {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .thermal-badge.warm {
+    background: rgba(249, 115, 22, 0.22);
+    color: #fed7aa;
+    border-color: rgba(251, 146, 60, 0.45);
+}
+
+[data-theme="dark"] .thermal-badge.cool {
+    background: rgba(14, 165, 233, 0.22);
+    color: #bae6fd;
+    border-color: rgba(56, 189, 248, 0.45);
+}
+
+[data-theme="dark"] .rec-card.rec-card-adjusted {
+    border-color: rgba(251, 146, 60, 0.5);
+    box-shadow: 0 8px 32px rgba(249, 115, 22, 0.2);
+}
+
+[data-theme="dark"] .rc-adjusted-tag {
+    color: #fbbf24;
 }
 
 [data-theme="dark"] .similar-day {

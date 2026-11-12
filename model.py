@@ -46,6 +46,149 @@ GERI_BILDIRIM_SECENEKLERI = {
 }
 
 
+# ─── Isı Puanları (Hibrit Termal Düzeltme Katmanı) ───
+# Her kıyafetin ne kadar sıcak tuttuğunu gösteren sabit puanlar.
+# Yüksek puan = daha sıcak tutar.
+ISI_PUANLARI = {
+    "ust": {"Askılı Tişört": 1, "Kısa kollu Tişört": 2, "Uzun kollu Tişört": 3,
+            "İnce Kazak": 4, "Sweatshirt": 5, "Kalın Kazak": 6},
+    "dis": {"Yok": 0, "Ceket": 2, "Hırka": 3, "Mont": 6},
+    "alt": {"Şort": 1, "Etek": 1, "İnce Kumaş pantolon": 1,
+            "Kumaş Pantolon": 2, "Kot pantolon": 3, "Eşofman": 3},
+    "ayakkabi": {"Crocs": 1, "Spor Ayakkabı": 2, "Bot": 3},
+    "ekstra": {"Yok": 0, "Şemsiye": 0, "Atkı": 1},
+}
+
+# Sadece bu kategoriler kaydırılır (uyumsuz kombinleri önlemek için)
+ISITMA_SIRASI = ["ust", "dis"]      # üşüme: önce üst, sonra dış
+SERINLETME_SIRASI = ["dis", "ust"]  # terleme: önce dış, sonra üst
+
+TERMAL_ESIK = 0.34        # sinyal bu değeri aşarsa düzeltme yapılır
+TERMAL_KOMSU_SAYISI = 5   # bakılacak benzer gün sayısı
+PUAN_TOLERANSI = 1        # "aynı sıcaklıkta kombin" sayılma toleransı
+
+# CSV sütun adları ↔ kategori anahtarları
+KATEGORI_SUTUNLARI = {
+    "ust": "Ust_Giyim", "alt": "Alt_Giyim", "dis": "Dis_Giyim",
+    "ayakkabi": "Ayakkabi", "ekstra": "Ekstra",
+}
+
+
+def _parca_puani(kategori: str, kiyafet: str) -> float:
+    """Tek bir kıyafetin ısı puanı. Bilinmeyen kıyafet için kategori ortalaması."""
+    tablo = ISI_PUANLARI.get(kategori, {})
+    if kiyafet in tablo:
+        return tablo[kiyafet]
+    return float(np.mean(list(tablo.values()))) if tablo else 0.0
+
+
+def kombin_puani(kombin: dict) -> float:
+    """Kombinin toplam ısı puanı. kombin: {"ust": ..., "alt": ..., ...}"""
+    return sum(_parca_puani(k, kombin.get(k)) for k in ISI_PUANLARI)
+
+
+def _bir_basamak_kaydir(kategori: str, mevcut: str, yon: int) -> str | None:
+    """
+    Kıyafeti ısı sıralamasında bir basamak kaydırır.
+    yon=+1 → daha sıcak, yon=-1 → daha serin. Uçtaysa None döner.
+    """
+    tablo = ISI_PUANLARI.get(kategori, {})
+    if mevcut not in tablo:
+        return None
+    mevcut_puan = tablo[mevcut]
+    if yon > 0:
+        adaylar = [(p, k) for k, p in tablo.items() if p > mevcut_puan]
+        return min(adaylar)[1] if adaylar else None
+    adaylar = [(p, k) for k, p in tablo.items() if p < mevcut_puan]
+    return max(adaylar)[1] if adaylar else None
+
+
+def termal_duzeltme(kombin: dict, hava_vektoru: list, df: pd.DataFrame,
+                    scaler: StandardScaler) -> dict:
+    """
+    KNN önerisini geçmiş geri bildirimlere göre ısı ekseninde düzeltir.
+
+    Bugünün havasına en yakın günler (TÜM kayıtlar, geri bildirimler dahil)
+    bulunur. Bunlardan kombin puanı önerilen kombine yakın olanların
+    mesafe ağırlıklı geri bildirim ortalaması "termal sinyal"dir:
+      sinyal ≤ -eşik → bir basamak ısıt, sinyal ≥ +eşik → bir basamak serinlet.
+    """
+    puan_once = kombin_puani(kombin)
+    sonuc = {
+        "uygulandi": False, "yon": None, "sinyal": 0.0,
+        "degisiklikler": [], "puan_once": puan_once, "puan_sonra": puan_once,
+        "ornek_gun": None,
+    }
+    if df.empty:
+        return sonuc
+
+    ozellikler = ["Sicaklik", "Hissedilen", "Nem", "Ruzgar"]
+    X_tum = scaler.transform(df[ozellikler].values)
+    sorgu = scaler.transform([hava_vektoru])[0]
+    mesafeler = np.linalg.norm(X_tum - sorgu, axis=1)
+
+    k = min(TERMAL_KOMSU_SAYISI, len(df))
+    en_yakinlar = np.argsort(mesafeler)[:k]
+
+    toplam_agirlik, agirlikli_gb = 0.0, 0.0
+    ilgili = []  # (mesafe, gb, satır)
+    for idx in en_yakinlar:
+        satir = df.iloc[idx]
+        satir_kombin = {kat: satir[sutun] for kat, sutun in KATEGORI_SUTUNLARI.items()}
+        if abs(kombin_puani(satir_kombin) - puan_once) > PUAN_TOLERANSI:
+            continue  # farklı sıcaklıkta kombin → bu öneri hakkında bilgi vermez
+        gb = int(satir.get("Geri_Bildirim", 0) or 0)
+        agirlik = 1.0 / (mesafeler[idx] + 1e-3)
+        toplam_agirlik += agirlik
+        agirlikli_gb += agirlik * gb
+        ilgili.append((mesafeler[idx], gb, satir))
+
+    if toplam_agirlik == 0:
+        return sonuc
+
+    sinyal = agirlikli_gb / toplam_agirlik
+    sonuc["sinyal"] = round(float(sinyal), 2)
+
+    if sinyal <= -TERMAL_ESIK:
+        yon, sira, hedef_gb = +1, ISITMA_SIRASI, -1
+    elif sinyal >= TERMAL_ESIK:
+        yon, sira, hedef_gb = -1, SERINLETME_SIRASI, 1
+    else:
+        return sonuc
+
+    # Tek basamak: sıradaki ilk kaydırılabilir kategori
+    for kategori in sira:
+        yeni = _bir_basamak_kaydir(kategori, kombin.get(kategori), yon)
+        if yeni:
+            sonuc["degisiklikler"].append({
+                "kategori": kategori, "onceki": kombin[kategori], "yeni": yeni,
+            })
+            break
+
+    if not sonuc["degisiklikler"]:
+        return sonuc
+
+    yeni_kombin = dict(kombin)
+    for d in sonuc["degisiklikler"]:
+        yeni_kombin[d["kategori"]] = d["yeni"]
+
+    # Açıklama için sinyale en çok katkı veren (en yakın) olumsuz gün
+    ornekler = sorted([x for x in ilgili if x[1] == hedef_gb], key=lambda x: x[0])
+    if ornekler:
+        s = ornekler[0][2]
+        sonuc["ornek_gun"] = {
+            "tarih": s["Tarih"], "sicaklik": float(s["Sicaklik"]),
+            "ust": s["Ust_Giyim"], "dis": s["Dis_Giyim"],
+        }
+
+    sonuc.update({
+        "uygulandi": True,
+        "yon": "isit" if yon > 0 else "serinlet",
+        "puan_sonra": kombin_puani(yeni_kombin),
+    })
+    return sonuc
+
+
 def veri_yukle() -> pd.DataFrame:
     """CSV dosyasından mevcut kıyafet verilerini yükler."""
     if not os.path.exists(CSV_DOSYASI):
@@ -205,6 +348,15 @@ def tahmin_yap(sicaklik: float, hissedilen: float, nem: int, ruzgar: float) -> d
             mesafeler, indeksler = model.kneighbors(yeni_veri)
             benzer_gunler_indices = indeksler[0]
 
+    # ─── Hibrit katman: geri bildirime göre ısı düzeltmesi ───
+    kombin = {kat: sonuclar[kat]["tahmin"] for kat in KATEGORI_SUTUNLARI}
+    isi_duzeltme = termal_duzeltme(kombin, [sicaklik, hissedilen, nem, ruzgar], df, scaler)
+    for d in isi_duzeltme["degisiklikler"]:
+        kat = d["kategori"]
+        sonuclar[kat]["knn_tahmin"] = sonuclar[kat]["tahmin"]
+        sonuclar[kat]["tahmin"] = d["yeni"]
+        sonuclar[kat]["duzeltildi"] = True
+
     # Benzer günlerin detayları
     benzer_gunler = []
     if benzer_gunler_indices is not None:
@@ -234,6 +386,7 @@ def tahmin_yap(sicaklik: float, hissedilen: float, nem: int, ruzgar: float) -> d
         "ekstra": sonuclar["ekstra"],
         "benzer_gunler": benzer_gunler,
         "toplam_veri": len(df),
+        "isi_duzeltme": isi_duzeltme,
     }
 
 
